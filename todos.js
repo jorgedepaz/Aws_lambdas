@@ -643,11 +643,11 @@ module.exports.updateOrder = (event, context, callback) => {
     tipo: 'required|integer',
     idusuario: 'required|integer',
     estado: 'integer',
-    descripcion: 'string',
-    referencia: 'required|string',
+    descripcion: 'string|max:255',
+    referencia: 'required|string|max:100',
     'detalle.*.idservicio': 'required|integer',
     'detalle.*.precio': 'required|numeric',
-    'detalle.*.comentario': 'required|string',
+    'detalle.*.comentario': 'required|string|max:100',
     'detalle.*.descuento': 'required|numeric',
     'detalle.*.total': 'required|numeric',
     'detalle.*.estado': 'required|integer',
@@ -667,11 +667,11 @@ module.exports.updateOrder = (event, context, callback) => {
     tipo: 'required|integer',
     idusuario: 'required|integer',
     estado: 'integer',
-    descripcion: 'string',
-    referencia: 'required|string',
+    descripcion: 'string|max:255',
+    referencia: 'required|string|max:100',
     'detalle.*.idservicio': 'required|integer',
     'detalle.*.precio': 'required|numeric',
-    'detalle.*.comentario': 'required|string',
+    'detalle.*.comentario': 'required|string|max:100',
     'detalle.*.descuento': 'required|numeric',
     'detalle.*.total': 'required|numeric',
     'detalle.*.estado': 'required|integer'
@@ -1479,7 +1479,7 @@ module.exports.createService = (event, context, callback) => {
   const body = JSON.parse(event.body);
 //-------------------------
 var rules = {
-  nombre: 'required|string',
+  nombre: 'required|string|max:45',
   costo: 'required|numeric'
 };
 
@@ -1578,11 +1578,11 @@ module.exports.createOrder = (event, context, callback) => {
       tipo: 'required|integer',
       idusuario: 'required|integer',
       estado: 'integer',
-      descripcion: 'string',
-      referencia: 'required|string',
+      descripcion: 'string|max:255',
+      referencia: 'required|string|max:100',
       'detalle.*.idservicio': 'required|integer',
       'detalle.*.precio': 'required|numeric',
-      'detalle.*.comentario': 'required|string',
+      'detalle.*.comentario': 'required|string|max:100',
       'detalle.*.descuento': 'required|numeric',
       'detalle.*.total': 'required|numeric',
       'detalle.*.estado': 'required|integer',
@@ -1601,11 +1601,11 @@ module.exports.createOrder = (event, context, callback) => {
       tipo: 'required|integer',
       idusuario: 'required|integer',
       estado: 'integer',
-      descripcion: 'string',
-      referencia: 'required|string',
+      descripcion: 'string|max:255',
+      referencia: 'required|string|max:100',
       'detalle.*.idservicio': 'required|integer',
       'detalle.*.precio': 'required|numeric',
-      'detalle.*.comentario': 'required|string',
+      'detalle.*.comentario': 'required|string|max:100',
       'detalle.*.descuento': 'required|numeric',
       'detalle.*.total': 'required|numeric',
       'detalle.*.estado': 'required|integer'
@@ -1844,14 +1844,14 @@ module.exports.createClient = (event, context, callback) => {
   };
 }else if (body.tipo == 2) {
   rules = {
-    nombre: 'required|string',
-    nit: 'required|string',
-    telefono1: 'string',
-    telefono2: 'string',
-    direccion: 'string',
+    nombre: 'required|string|max:255',
+    nit: 'required|string|max:45',
+    telefono1: 'string|max:15',
+    telefono2: 'string|max:15',
+    direccion: 'string|max:255',
     idmunicipio: 'integer',
     iddepartamento: 'integer',
-    email: 'email',
+    email: 'email|max:45',
     fecha_ingreso: 'date',
     tipo: 'required|integer',
     actividad_economica_juridico: 'string|max:100',
@@ -2293,19 +2293,19 @@ module.exports.createProduct = (event, context, callback) => { //No desarrollado
   const body = JSON.parse(event.body);
 //----------------------------------------
 var rules = {
-  codigo: 'required|string',
-  nombre: 'required|string',
-  descripcion: 'required|string',
+  codigo: 'required|string|max:45',
+  nombre: 'required|string|max:45',
+  descripcion: 'required|string|max:255',
   idmarca: 'required|integer',
   idcategoria: 'required|integer',
-  modelo: 'string',
-  talla: 'string',
+  modelo: 'string|max:45',
+  talla: 'string|max:5',
   min: 'integer',
   max: 'integer',
   costo: 'required|numeric',
   estado: 'integer',
-  linea: 'string',
-  observacion: 'string'
+  linea: 'string|max:45',
+  observacion: 'string|max:60'
 };
 
   
