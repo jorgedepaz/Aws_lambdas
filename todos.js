@@ -8,7 +8,7 @@ module.exports.findAllSucursal = (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false; //Para que no devuelva un timeOut porque no va a sber cuando han retornado la info
 
   var idSuc = [event.pathParameters.idSucursal]
-
+  console.log(idSuc);
   const sql = 'SELECT pos.producto.idproducto, pos.producto.codigo, pos.producto.nombre, pos.producto.descripcion, pos.marca.nombre_marca, pos.categoria.nombre_categoria, pos.producto.modelo, pos.producto.talla, pos.producto.min, pos.producto.max, pos.producto.costo, pos.producto.estado, pos.producto.linea, pos.producto.observacion FROM pos.producto inner join pos.marca inner join pos.categoria on pos.producto.idmarca = pos.marca.idmarca and pos.producto.idcategoria = pos.categoria.idcategoria';
   const sql2 = 'SELECT * FROM pos.precio';
   //const sql3 = 'SELECT * FROM pos.producto_sucursal';
@@ -1358,8 +1358,25 @@ module.exports.handledata = (event, context, callback) => {
 module.exports.createEmployee = (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false;
   const body = JSON.parse(event.body);
+//-----------
+var rules = {
+  nombre: 'required|string|max:45',
+  telefono1: 'required|string|max:20',
+  telefono2: 'string|max:20',
+  direccion: 'required|string|max:255',
+  idmunicipio: 'required|integer',
+  iddepartamento: 'required|integer',
+  email: 'email|max:45',
+  salario_base: 'numeric',
+  idpuesto: 'required|integer',
+  idsucursal: 'required|integer',
+  fecha_ingreso: 'required|date'
+};
 
-
+let validation = new Validator(body, rules);
+if (validation.passes()) {
+  
+//----------
   var data = {
     idempleado: null,
     nombre: body.nombre,
@@ -1372,7 +1389,7 @@ module.exports.createEmployee = (event, context, callback) => {
     salario_base: body.salario_base,
     idpuesto: body.idpuesto,
     idsucursal: body.idsucursal,
-    fecha_ingreso: "2016-10-10"
+    fecha_ingreso: body.fecha_ingreso
 
   };
   // Obteniendo todas las claves del JSON
@@ -1435,7 +1452,24 @@ module.exports.createEmployee = (event, context, callback) => {
     }); //final query principal
   }); //final begin transaction
 
+}//final de la validacion de JSON
+else{
+  
+    callback(null, {
+      statusCode: 500,
+      headers: {
 
+        'Access-Control-Allow-Origin': '*',
+
+        'Access-Control-Allow-Credentials': true,
+
+      },
+      body: JSON.stringify({
+        message: 'Datos no validos'
+      })
+    })
+  
+}
 }; //final de la funcion
 //--fin crear empleado
 
@@ -1443,7 +1477,15 @@ module.exports.createEmployee = (event, context, callback) => {
 module.exports.createService = (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false;
   const body = JSON.parse(event.body);
+//-------------------------
+var rules = {
+  nombre: 'required|string',
+  costo: 'required|numeric'
+};
 
+let validation = new Validator(body, rules);
+if (validation.passes()) {
+//-------------------------
 
   var data = {
     idservicio: null,
@@ -1500,7 +1542,22 @@ module.exports.createService = (event, context, callback) => {
 
     }); //final query principal
   }); //final begin transaction
+}//final de la validacion
+else{
+  callback(null, {
+    statusCode: 500,
+    headers: {
 
+      'Access-Control-Allow-Origin': '*',
+
+      'Access-Control-Allow-Credentials': true,
+
+    },
+    body: JSON.stringify({
+      message: 'Datos no validos'
+    })
+  })
+}
 
 }; //final de la funcion
 //--fin crear servicio
@@ -1513,7 +1570,7 @@ module.exports.createOrder = (event, context, callback) => {
 
   if(body.detalle != "" && body.detalle_producto != ""){
     rules = {
-      idempleado: 'required|integer',
+      idempleado: 'integer',
       idtaller: 'required|integer',
       total: 'required|numeric',
       fecha_inicio: 'required|date',
@@ -1766,24 +1823,24 @@ let validation = new Validator(body, rules);
 module.exports.createClient = (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false;
   const body = JSON.parse(event.body);
-
+  
   var rules = {}
 
   if(body.tipo == 1){
   rules = {
-    nombre: 'required|string',
-    nit: 'required|string',
-    telefono1: 'string',
-    telefono2: 'string',
-    direccion: 'string',
+    nombre: 'required|string|max:255',
+    nit: 'required|string|max:45',
+    telefono1: 'string|max:15',
+    telefono2: 'string|max:15',
+    direccion: 'string|max:255',
     idmunicipio: 'integer',
     iddepartamento: 'integer',
-    email: 'email',
+    email: 'email|max:45',
     fecha_ingreso: 'date',
     tipo: 'required|integer',
-    cui_individual: 'string',
+    cui_individual: 'string|max:13',
     fecha_nac_individual: 'date',
-    sexo_individual: 'char'
+    sexo_individual: 'string'
   };
 }else if (body.tipo == 2) {
   rules = {
@@ -1797,9 +1854,12 @@ module.exports.createClient = (event, context, callback) => {
     email: 'email',
     fecha_ingreso: 'date',
     tipo: 'required|integer',
+    actividad_economica_juridico: 'string|max:100',
+    fecha_inicio_op_juridico: 'date'
   }
 }
-
+let validation = new Validator(body, rules);
+  if (validation.passes()) {
 
   if (body.tipo == 1) {
     var data = {
@@ -1918,14 +1978,43 @@ module.exports.createClient = (event, context, callback) => {
 
     }); //final query principal
   }); //final begin transaction
+  }//fin de la validacion de los datos
+  else{
+    callback(null, {
+      statusCode: 500,
+      headers: {
 
+        'Access-Control-Allow-Origin': '*',
+
+        'Access-Control-Allow-Credentials': true,
+
+      },
+      body: JSON.stringify({
+        message: 'Datos no validos'
+      })
+    })
+
+  }
 
 }; //final de la funcion
 
 module.exports.createProvider = (event, context, callback) => { //crear proveedor
   context.callbackWaitsForEmptyEventLoop = false;
   const body = JSON.parse(event.body);
-
+  //--------------------------
+  var rules = {
+    nombre: 'required|string|max:255',
+    nit: 'required|string|max:15',
+    telefono1: 'required|string|max:20',
+    telefono2: 'string|max:20',
+    direccion: 'required|string|max:255',
+    idmunicipio: 'required|integer',
+    iddepartamento: 'required|integer'
+  };
+  
+  let validation = new Validator(body, rules);
+  if (validation.passes()) {
+  //--------------------------
   var data = {
       idproveedor: null,
       nombre: body.nombre,
@@ -1986,6 +2075,23 @@ module.exports.createProvider = (event, context, callback) => { //crear proveedo
 
     }); //final query principal
   }); //final begin transaction
+  }//fin de la validacion de los datos
+  else{
+    callback(null, {
+      statusCode: 500,
+      headers: {
+
+        'Access-Control-Allow-Origin': '*',
+
+        'Access-Control-Allow-Credentials': true,
+
+      },
+      body: JSON.stringify({
+        message: 'Datos no validos'
+      })
+    })
+
+  }
 }//Fin de la funcion
 
 module.exports.findProviders = (event, context, callback) => {
@@ -2021,6 +2127,12 @@ module.exports.createCategory = (event, context, callback) => { //crear categori
   context.callbackWaitsForEmptyEventLoop = false;
   const body = JSON.parse(event.body);
 
+  var rules = {
+    nombre_categoria: 'required|string|max:45'
+  };
+  
+  let validation = new Validator(body, rules);
+  if (validation.passes()) {
 
   var data = {
     idcategoria: null,
@@ -2076,14 +2188,33 @@ module.exports.createCategory = (event, context, callback) => { //crear categori
 
     }); //final query principal
   }); //final begin transaction
+  }//final de la validacion
+else{
+  callback(null, {
+    statusCode: 500,
+    headers: {
 
+      'Access-Control-Allow-Origin': '*',
+
+      'Access-Control-Allow-Credentials': true,
+
+    },
+    body: JSON.stringify({
+      message: 'Datos no validos'
+    })
+  })
+}
 
 }; //final de la funcion
 module.exports.createBrand = (event, context, callback) => { //crear marca
   context.callbackWaitsForEmptyEventLoop = false;
   const body = JSON.parse(event.body);
-
-
+  var rules = {
+    nombre_marca: 'required|string|max:45',
+  };
+  let validation = new Validator(body, rules);
+  
+  if (validation.passes()) {
   var data = {
     idmarca: null,
     nombre_marca: body.nombre_marca,
@@ -2138,13 +2269,49 @@ module.exports.createBrand = (event, context, callback) => { //crear marca
 
     }); //final query principal
   }); //final begin transaction
+  }//fin de la validacion de los datos
+  else{
+    callback(null, {
+      statusCode: 500,
+      headers: {
 
+        'Access-Control-Allow-Origin': '*',
+
+        'Access-Control-Allow-Credentials': true,
+
+      },
+      body: JSON.stringify({
+        message: 'Datos no validos'
+      })
+    })
+
+  }
 
 }; //final de la funcion
 module.exports.createProduct = (event, context, callback) => { //No desarrollado
   context.callbackWaitsForEmptyEventLoop = false;
   const body = JSON.parse(event.body);
+//----------------------------------------
+var rules = {
+  codigo: 'required|string',
+  nombre: 'required|string',
+  descripcion: 'required|string',
+  idmarca: 'required|integer',
+  idcategoria: 'required|integer',
+  modelo: 'string',
+  talla: 'string',
+  min: 'integer',
+  max: 'integer',
+  costo: 'required|numeric',
+  estado: 'integer',
+  linea: 'string',
+  observacion: 'string'
+};
 
+  
+let validation = new Validator(body, rules);
+  if (validation.passes()) {
+//----------------------------------------
 
   var data = {
     idproducto: null,
@@ -2212,7 +2379,23 @@ module.exports.createProduct = (event, context, callback) => { //No desarrollado
 
     }); //final query principal
   }); //final begin transaction
+  }//final de la validacion
+  else{
+    callback(null, {
+      statusCode: 500,
+      headers: {
 
+        'Access-Control-Allow-Origin': '*',
+
+        'Access-Control-Allow-Credentials': true,
+
+      },
+      body: JSON.stringify({
+        message: 'Datos no validos'
+      })
+    })
+
+  }
 
 }; //final de la funcion
 /*crear cliente

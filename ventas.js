@@ -1,6 +1,7 @@
 'use strict';
 const connection = require('../connection');
 const queryString = require('querystring');
+const Validator = require('validatorjs');
 
 //--crear venta pos.documento_venta;, pos.detalle_documento_venta;
 module.exports.findSale = (event, context, callback) => {
@@ -119,6 +120,43 @@ module.exports.sale = (event, context, callback) => {
   var existencia
   var UsuarioSucursal
   var SucursalVenta
+
+  //---------------------------------------
+  var rules = {};
+
+  if(body.detalle != ""){
+    rules = {
+      idcliente: 'integer',
+      numero: 'integer',
+      fecha: 'required|date',
+      idusuario: 'required|integer',
+      total: 'required|numeric',
+      estado: 'integer',
+      idpago: 'integer',
+      idorden: 'integer',
+      referencia: 'string|max:100',
+      'detalle.*.idproducto': 'required|integer',
+      'detalle.*.cantidad': 'integer',
+      'detalle.*.precio_venta': 'required|numeric',
+      'detalle.*.tipo_precio': 'required|integer',
+    };
+  }else if (body.detalle == "") {
+    rules = {
+    idcliente: 'integer',
+    numero: 'integer',
+    fecha: 'required|date',
+    idusuario: 'required|integer',
+    total: 'required|numeric',
+    estado: 'integer',
+    idpago: 'integer',
+    idorden: 'integer',
+    referencia: 'string|max:100'
+    }
+  }
+let validation = new Validator(body, rules);
+  if (validation.passes()) {
+  //---------------------------------------
+
   var data = {
     iddocumento_venta: null,
     idcliente: body.idcliente,
@@ -800,341 +838,23 @@ module.exports.sale = (event, context, callback) => {
       }
     }); //Final del query designar la sucursal
   }); //final begin transaction
+  }//final del if para la validacion
+  else{
+    callback(null, {
+      statusCode: 500,
+      headers: {
 
-  if (datade == "12345") { //-----------------------------------------------------------------------------------------------------------------------------------------------
-    connection.beginTransaction(function (err) {
-      var idG;
-      if (err) {
-        throw err;
-      }
+        'Access-Control-Allow-Origin': '*',
 
-      connection.query('SELECT pos.usuario.idusuario,pos.empleado.idsucursal FROM pos.usuario INNER JOIN pos.empleado ON pos.usuario.idempleado = pos.empleado.idempleado', function (error, results0, fields) { //query para determinar la sucursal del usuario
-        if (error) {
-          return connection.rollback(function () {
-            throw error;
-          });
-        }
-        UsuarioSucursal = results0;
+        'Access-Control-Allow-Credentials': true,
 
-        for (let index = 0; index < UsuarioSucursal.length; index++) { //Ciclo para saber desde que sucursal se esta comprando
-          if (data.idusuario == UsuarioSucursal[index].idusuario) {
-            SucursalVenta = UsuarioSucursal[index].idsucursal;
-          }
-        }
-        console.log("Muestra los id de usuarios y las id de las sucursales");
-        console.log(UsuarioSucursal);
-        console.log("ID sucursal donde trabaja el usuario que esta haciendo la venta");
-        console.log(SucursalVenta);
-
-        connection.query('SELECT * FROM pos.producto_sucursal where pos.producto_sucursal.idsucursal = ?', [SucursalVenta], function (error, results, fields) { //query para obtener la existencias de la sucursal del usuario
-          if (error) {
-            return connection.rollback(function () {
-              throw error;
-            });
-          }
-          existencia = results
-          console.log('Muesta las existencias que hay en la sucursal del usuario');
-          console.log(existencia);
-
-
-          connection.query('INSERT INTO pos.documento_venta SET ?', [data], function (error, results1, fields) { //query para insertar el documento venta
-            if (error) {
-              return connection.rollback(function () {
-                throw error;
-              });
-            }
-
-
-            //idG es el id de documento de venta que se va a instertar
-            idG = results1.insertId;
-            var resta2 = []
-            var nuevaExistencia = {
-              idproducto: null,
-              idsucursal: null,
-              existencia: null
-            }
-
-            connection.query('SELECT * FROM pos.detalle_producto WHERE pos.detalle_producto.idorden = ?', [data.idorden], function (error, results10, fields) { //query para ontener el producto de la orden
-              if (error) {
-                return connection.rollback(function () {
-                  throw error;
-                });
-              }
-              var productosOrden = results10;
-
-              console.log('Productos de la orden');
-              console.log(productosOrden);
-
-              let sql = productosOrden.map(item => `(${item.idorden},${item.idproducto}, ${item.cantidad}, ${item.precio_venta}, ${item.tipo_precio})`)
-
-              console.log("Datos de la compra, de la orden");
-              console.log(sql);
-              console.log("Datos de existencia");
-              console.log(existencia);
-
-              for (let index = 0; index < productosOrden.length; index++) { //En este ciclo anidado se comprobaria existencia si no utilizamos inventario negativo
-                for (let index2 = 0; index2 < existencia.length; index2++) { //utilizar try catch
-                  if (productosOrden[index].idproducto == existencia[index2].idproducto) {
-                    nuevaExistencia = {}
-                    nuevaExistencia.idproducto = productosOrden[index].idproducto
-                    nuevaExistencia.idsucursal = SucursalVenta
-                    nuevaExistencia.existencia = existencia[index2].existencia - productosOrden[index].cantidad
-                    resta2.push(nuevaExistencia)
-                  }
-
-                }
-
-              }
-
-              console.log("Array de objetos para insertar ");
-              console.log(resta2);
-
-
-              connection.query('UPDATE pos.orden SET estado = 1 WHERE idorden = ?', [data.idorden], function (error, results2, fields) { //query para actualizar a facturada la orden
-                if (error) {
-                  return connection.rollback(function () {
-                    throw error;
-                  });
-                }
-                //--------------------------------------------- query para eliminar existencias viejas
-                //DELETE FROM pos.producto_sucursal WHERE pos.producto_sucursal.idproducto IN (1,2,3) and pos.producto_sucursal.idsucursal = 2;
-                let sqlDelete = resta2.map(item => `(${item.idproducto})`)
-                var queryDeleteProductoSucursal = "DELETE FROM pos.producto_sucursal WHERE pos.producto_sucursal.idproducto IN (" + sqlDelete + ") and pos.producto_sucursal.idsucursal = ?";
-                //console.log(queryDeleteProductoSucursal);
-                console.log("ID's para elmininar");
-                console.log(sqlDelete);
-                console.log("Query completa");
-                console.log(queryDeleteProductoSucursal);
-
-
-
-                connection.query(queryDeleteProductoSucursal, [SucursalVenta], function (error, results, fields) { //query para eliminar las existencias viejas
-                  if (error) {
-                    return connection.rollback(function () {
-                      throw error;
-                    });
-                  }
-
-                  let sqlX = resta2.map(item => `(${item.idproducto},${item.idsucursal}, ${item.existencia})`)
-                  const finalQueryX = "INSERT INTO pos.producto_sucursal (idproducto,idsucursal,existencia) VALUES " + sqlX
-                  //--------------------------------------------------------------------------------------------------------------------------------------------------------------
-                  connection.query(finalQueryX, function (error, results, fields) { //query para insertar las nuevas existencias del inventario de la sucursal
-                    if (error) {
-                      return connection.rollback(function () {
-                        throw error;
-                      });
-                    }
-                    connection.commit(function (err) { //inicio del commit
-                      console.log("Mensaje desde el commit");
-                      if (err) {
-                        return connection.rollback(function () {
-                          throw err;
-                        });
-                      } else {
-                        callback(null, {
-                          statusCode: 200,
-                          headers: {
-
-                            'Access-Control-Allow-Origin': '*',
-
-                            'Access-Control-Allow-Credentials': true,
-
-                          },
-                          body: JSON.stringify({
-                            message: 'Venta realizada correctamente',
-                            id: idG
-                          })
-                        })
-                      }
-                    }); //Fin commit
-                  }); //fin del query para el update de las existencias
-                }); //fin del query para eliminar las existencias viejas
-              }); //fin del query para actualzar a facturado
-            }); //Para obtener los datos de los productos vendidos en la orden
-          }); //final query principal insertar documento de venta
-        }); //Final del query para obtener las existencias
-      }); //Final del query designar la sucursal
-    }); //final begin transaction
-
-
-
-  } else if (datade == "321asdf") { //Else muy importante MUUUUUUUUUUUUUUUUUUUUUUY
-
-    connection.beginTransaction(function (err) {
-      var idG;
-      if (err) {
-        throw err;
-      }
-
-      connection.query('SELECT pos.usuario.idusuario,pos.empleado.idsucursal FROM pos.usuario INNER JOIN pos.empleado ON pos.usuario.idempleado = pos.empleado.idempleado', function (error, results0, fields) { //query para determinar la sucursal del usuario
-        if (error) {
-          return connection.rollback(function () {
-            throw error;
-          });
-        }
-        UsuarioSucursal = results0;
-
-        for (let index = 0; index < UsuarioSucursal.length; index++) { //Ciclo para saber desde que sucursal se esta comprando
-          if (data.idusuario == UsuarioSucursal[index].idusuario) {
-            SucursalVenta = UsuarioSucursal[index].idsucursal;
-          }
-        }
-        console.log("Muestra los id de usuarios y las id de las sucursales");
-        console.log(UsuarioSucursal);
-        console.log("ID sucursal donde trabaja el usuario que esta haciendo la venta");
-        console.log(SucursalVenta);
-
-        connection.query('SELECT * FROM pos.producto_sucursal where pos.producto_sucursal.idsucursal = ?', [SucursalVenta], function (error, results, fields) { //query para obtener la existencias de la sucursal del usuario
-          if (error) {
-            return connection.rollback(function () {
-              throw error;
-            });
-          }
-          existencia = results
-          console.log('Muesta las existencias que hay en la sucursal del usuario');
-          console.log(existencia);
-          /*for (let index2 = 0; index2 < datade.length; index2++) { //Ciclo para recorer los items del detalle de venta----------------------------------------------------------
-            //const element = datade[index].idproducto;
-            for (let index3 = 0; index3 < existencia.length; index3++) {//ciclo para recorer las existencias y verificar si hay stock
-              //const element = array[index3];//Si hay Stock entonces se hace un array con las existencias actuales y las existencias para actualizar
-                                              //Si no hay Stock entonces se hace un array donde se guardan los que no hay para avisar igual se llama al callback
-              if (datade[index2].idproducto == existencia[index3].idproducto) {
-                console.log("Hay del producto "+(datade[index2].idproducto).toString()+" En la sucrusal "+ SucursalVenta.toString()); 
-              }
-              //else{
-              //  console.log("No hay del producto "+(datade[index2].idproducto).toString()+" En la sucrusal "+ SucursalVenta.toString()); 
-              //}
-              
-            }            
-          }*/
-
-          connection.query('INSERT INTO pos.documento_venta SET ?', [data], function (error, results1, fields) { //query para insertar el documento venta
-            if (error) {
-              return connection.rollback(function () {
-                throw error;
-              });
-            }
-            //idG es el id de documento de venta que se va a instertar
-            idG = results1.insertId;
-            var resta2 = []
-            var nuevaExistencia = {
-              idproducto: null,
-              idsucursal: null,
-              existencia: null
-            }
-
-            let sql = datade.map(item => `(${idG},${item.idproducto}, ${item.cantidad}, ${item.precio_venta}, ${item.tipo_precio})`)
-
-            console.log("Datos de la compra");
-            console.log(datade);
-            console.log("Datos de existencia");
-            console.log(existencia);
-
-            for (let index = 0; index < datade.length; index++) { //En este ciclo anidado se comprobaria existencia si no utilizamos inventario negativo
-              for (let index2 = 0; index2 < existencia.length; index2++) { //utilizar try catch
-                if (datade[index].idproducto == existencia[index2].idproducto) {
-                  nuevaExistencia = {}
-                  nuevaExistencia.idproducto = datade[index].idproducto
-                  nuevaExistencia.idsucursal = SucursalVenta
-                  nuevaExistencia.existencia = existencia[index2].existencia - datade[index].cantidad
-                  resta2.push(nuevaExistencia)
-                }
-
-              }
-
-            }
-
-            console.log("Array de objetos para insertar ");
-            console.log(resta2);
-
-
-            //existencia... array de objetos con los campos (idproducto, idsucursal, existencia)
-
-
-            console.log("valores del detalle de venta, idDocumento de venta, idproducto, cantidadComprada,Precio,TipodePrecio");
-            console.log(sql);
-            const finalQuery = "INSERT INTO pos.detalle_documento_venta (iddocumento_venta,idproducto, cantidad, precio_venta, tipo_precio) VALUES " + sql
-
-            //const queryUpdate = "UPDATE INTO pos.producto_sucursal (existencia) VALUES " + sqlUptdate 
-            //aqui poner una query para obtener todos los productos con su sucursal
-            //UPDATE pos.producto_sucursal SET existencia = REPLACE(existencia,90,30) WHERE idproducto = 1 and idsucursal = 1;
-            //let update_query =  `UPDATE pos.producto_sucursal SET existencia = REPLACE(existencia ,${update_set.join(" ,")} WHERE CUST_ID = "${data.keys.CUSTOMER}" AND APPL_ID = "${data.keys.APPLICATION}"`;
-            console.log(finalQuery)
-            //console.log("query("+finalQuery+")")
-
-            connection.query(finalQuery, function (error, results2, fields) { //query para insertar el detalle de producto vendido
-              if (error) {
-                return connection.rollback(function () {
-                  throw error;
-                });
-              }
-              //--------------------------------------------- query para eliminar existencias viejas
-              //DELETE FROM pos.producto_sucursal WHERE pos.producto_sucursal.idproducto IN (1,2,3) and pos.producto_sucursal.idsucursal = 2;
-              let sqlDelete = resta2.map(item => `(${item.idproducto})`)
-              var queryDeleteProductoSucursal = "DELETE FROM pos.producto_sucursal WHERE pos.producto_sucursal.idproducto IN (" + sqlDelete + ") and pos.producto_sucursal.idsucursal = ?";
-              //console.log(queryDeleteProductoSucursal);
-              console.log("ID's para elmininar");
-              console.log(sqlDelete);
-              console.log("Query completa");
-              console.log(queryDeleteProductoSucursal);
-
-
-              //codigo para mapear las querys
-
-              //let sql = datade.map(item => `(${"idorden = "}${idG},${" idservicio = "}${item.idservicio},${"precio = "}${item.precio},${" comentario = "} ${"'"}${item.comentario}${"'"},${" descuento = "} ${item.descuento}, ${" total = "}${item.total},${" estado = "} ${item.estado})`)     
-              //const finalQuery = "UPDATE pos.detalle_orden SET (idorden,idservicio, precio, comentario, descuento,total,estado) VALUES " + sql+"  WHERE pos.detalle_orden.idorden = ?"
-              //const finalQuery = "UPDATE pos.detalle_orden SET " + sql+"  WHERE pos.detalle_orden.idorden = ?"     
-              //console.log("Mapeado");
-              //console.log(finalQuery);
-              //UPDATE pos.producto_sucursal SET existencia = REPLACE(existencia,90,30) WHERE idproducto = 1 and idsucursal = 1;
-              connection.query(queryDeleteProductoSucursal, [SucursalVenta], function (error, results, fields) { //query para eliminar las existencias viejas
-                if (error) {
-                  return connection.rollback(function () {
-                    throw error;
-                  });
-                }
-
-                let sqlX = resta2.map(item => `(${item.idproducto},${item.idsucursal}, ${item.existencia})`)
-                const finalQueryX = "INSERT INTO pos.producto_sucursal (idproducto,idsucursal,existencia) VALUES " + sqlX
-                //--------------------------------------------------------------------------------------------------------------------------------------------------------------
-                connection.query(finalQueryX, function (error, results, fields) { //query para insertar las nuevas existencias del inventario de la sucursal
-                  if (error) {
-                    return connection.rollback(function () {
-                      throw error;
-                    });
-                  }
-                  connection.commit(function (err) { //inicio del commit
-                    console.log("Mensaje desde el commit");
-                    if (err) {
-                      return connection.rollback(function () {
-                        throw err;
-                      });
-                    } else {
-                      callback(null, {
-                        statusCode: 200,
-                        headers: {
-
-                          'Access-Control-Allow-Origin': '*',
-
-                          'Access-Control-Allow-Credentials': true,
-
-                        },
-                        body: JSON.stringify({
-                          message: 'Venta realizada correctamente',
-                          id: idG
-                        })
-                      })
-                    }
-                  }); //Fin commit
-                }); //fin del query para el update de las existencias
-              }); //fin del query para eliminar las existencias viejas
-            }); //fin del query para el detalle de documento de venta
-          }); //final query principal insertar documento de venta
-        }); //Final del query para obtener las existencias
-      }); //Final del query designar la sucursal
-    }); //final begin transaction
-
-  } //final del else para ver que no venga vacio el detalle
+      },
+      body: JSON.stringify({
+        message: 'Datos no validos'
+      })
+    })
+  }
+ 
 }; //final de la funcion
 //--fin realizar venta
 module.exports.shop = (event, context, callback) => {
@@ -1142,6 +862,23 @@ module.exports.shop = (event, context, callback) => {
   const body = JSON.parse(event.body);
 
   var existencia
+//---------------------------------------------
+var rules = {
+  numero: 'required|integer',
+  serie: 'required|string|max:45',
+  fecha: 'required|date',
+  idproveedor: 'required|integer',
+  total: 'numeric',
+  idusuario: 'required|integer',
+  'detalle.*.idproducto': 'required|integer',
+  'detalle.*.cantidad': 'integer',
+  'detalle.*.precio_compra': 'required|numeric',
+};
+
+ 
+let validation = new Validator(body, rules);
+  if (validation.passes()) {
+//---------------------------------------------
 
   var data = {
     idfactura_compra: null,
@@ -1294,6 +1031,21 @@ module.exports.shop = (event, context, callback) => {
       }); //fin del query para el detalle de compra
     }); //final query principal
   }); //final begin transaction
+}//final del if para la validacion
+else{
+  callback(null, {
+    statusCode: 500,
+    headers: {
 
+      'Access-Control-Allow-Origin': '*',
+
+      'Access-Control-Allow-Credentials': true,
+
+    },
+    body: JSON.stringify({
+      message: 'Datos no validos'
+    })
+  })
+}
 
 }; //final de la funcion
