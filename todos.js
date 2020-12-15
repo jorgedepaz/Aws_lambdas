@@ -717,6 +717,7 @@ module.exports.updateOrder = (event, context, callback) => {
     if (err) {
       throw err;
     }
+
     connection.query('SELECT * FROM pos.orden WHERE pos.orden.idorden = ?', [body.idorden], function (error, results, fields) { //[body.todo, event.pathParameters.todo]
       if (error) {
         return connection.rollback(function () {
@@ -753,7 +754,7 @@ module.exports.updateOrder = (event, context, callback) => {
         }); //Fin commit
 
 
-      }else if(results[0].estado == 0){
+      }else if(results[0].estado == 0 && datade != "" && data_producto != ""){
     connection.query('UPDATE pos.orden SET ? WHERE pos.orden.idorden = ?', [data, body.idorden], function (error, results, fields) { //[body.todo, event.pathParameters.todo]
       if (error) {
         return connection.rollback(function () {
@@ -829,7 +830,7 @@ module.exports.updateOrder = (event, context, callback) => {
 
                     },
                     body: JSON.stringify({
-                      message: 'orden y detalles actializados correctamente',
+                      message: 'orden, detalle de servicios y detalle de productos actualizados correctamente',
                       id: body.idorden
                     })
                   })
@@ -840,6 +841,37 @@ module.exports.updateOrder = (event, context, callback) => {
         }); //fin del query para eliminar detalle de producto
       }); //fin del query para eliminar detalle de orden
     }); //final query principal
+  }else if (results[0].estado == 0 && datade != "" && data_producto == "") {
+    callback(null, {
+      statusCode: 200,
+      headers: {
+
+        'Access-Control-Allow-Origin': '*',
+
+        'Access-Control-Allow-Credentials': true,
+
+      },
+      body: JSON.stringify({
+        message: 'El caso que hay que trabajar',
+        id: body.idorden
+      })
+    })
+  }
+  else if (results[0].estado == 0 && datade == "" ) {
+    callback(null, {
+      statusCode: 200,
+      headers: {
+
+        'Access-Control-Allow-Origin': '*',
+
+        'Access-Control-Allow-Credentials': true,
+
+      },
+      body: JSON.stringify({
+        message: 'No se puede agregar una orden sin servicios',
+        id: body.idorden
+      })
+    })
   }
   }); //Query para saber si se puede actualizar o no
   
