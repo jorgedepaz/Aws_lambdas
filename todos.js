@@ -842,20 +842,73 @@ module.exports.updateOrder = (event, context, callback) => {
       }); //fin del query para eliminar detalle de orden
     }); //final query principal
   }else if (results[0].estado == 0 && datade != "" && data_producto == "") {
-    callback(null, {
-      statusCode: 200,
-      headers: {
+    connection.query('UPDATE pos.orden SET ? WHERE pos.orden.idorden = ?', [data, body.idorden], function (error, results, fields) { //[body.todo, event.pathParameters.todo]
+      if (error) {
+        return connection.rollback(function () {
+          throw error;
+        });
+      }
+      idG = body.idorden; //Id de orden
 
-        'Access-Control-Allow-Origin': '*',
 
-        'Access-Control-Allow-Credentials': true,
+      connection.query(queryDeleteDetalleOrden, [idG], function (error, results, fields) { //Para eliminar el detalle de orden
+        if (error) {
+          return connection.rollback(function () {
+            throw error;
+          });
+        }
 
-      },
-      body: JSON.stringify({
-        message: 'El caso que hay que trabajar',
-        id: body.idorden
-      })
-    })
+        connection.query(queryDeleteDetalleProducto, [idG], function (error, results, fields) { //Para eliminar el detalle de producto
+          if (error) {
+            return connection.rollback(function () {
+              throw error;
+            });
+          }
+
+          //------------------------------------------ mapeo de datos para crear nuevos registros
+          let sql = datade.map(item => `(${idG},${item.idservicio}, ${item.precio}, ${"'"}${item.comentario}${"'"}, ${item.descuento}, ${item.total}, ${item.estado})`)
+          //array with items.
+          //console.log(sql);
+          const finalQuery = "INSERT INTO pos.detalle_orden (idorden,idservicio, precio, comentario, descuento,total,estado) VALUES " + sql
+          //console.log(finalQuery)
+          //console.log("query("+finalQuery+")")
+          //---------------------------------------------
+          connection.query(finalQuery, function (error, results, fields) { //Para el detalle de orden
+            if (error) {
+              return connection.rollback(function () {
+                throw error;
+              });
+            }
+
+            
+              connection.commit(function (err) {
+                //console.log("Mensaje desde el commit");
+                if (err) {
+                  return connection.rollback(function () {
+                    throw err;
+                  });
+                } else {
+                  callback(null, {
+                    statusCode: 200,
+                    headers: {
+
+                      'Access-Control-Allow-Origin': '*',
+
+                      'Access-Control-Allow-Credentials': true,
+
+                    },
+                    body: JSON.stringify({
+                      message: 'orden y detalle de servicios sin detalle de producto actualizados correctamente',
+                      id: body.idorden
+                    })
+                  })
+                }
+              }); //Fin commit
+            
+          }); //fin del query para insertar el detalle de orden
+        }); //fin del query para eliminar detalle de producto
+      }); //fin del query para eliminar detalle de orden
+    }); //final query principal
   }
   else if (results[0].estado == 0 && datade == "" ) {
     callback(null, {
