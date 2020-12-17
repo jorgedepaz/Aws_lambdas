@@ -724,6 +724,7 @@ module.exports.updateOrder = (event, context, callback) => {
           throw error;
         });
       }
+      
       console.log('Muestra el estado de la orden');
       console.log(results);
       console.log(results[0].estado);
