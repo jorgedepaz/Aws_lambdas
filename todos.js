@@ -705,7 +705,21 @@ module.exports.updateOrder = (event, context, callback) => {
       }
     }
   }
+if ((data.estado == 2) ||(data<1) || (data>3)){
+  callback(null, {
+    statusCode: 500,
+    headers: {
 
+      'Access-Control-Allow-Origin': '*',
+
+      'Access-Control-Allow-Credentials': true,
+
+    },
+    body: JSON.stringify({
+      message: 'No se puede colocar una orden como facturada, 1: para activarla 2: para cancelarla'
+    })
+  })
+}
   var datade = body.detalle;
   var data_producto = body.detalle_producto;
 
@@ -728,7 +742,7 @@ module.exports.updateOrder = (event, context, callback) => {
       console.log('Muestra el estado de la orden');
       console.log(results);
       console.log(results[0].estado);
-      if (results[0].estado == 2||results[0].estado == 3) {
+      if (results[0].estado == 2) {
         
         connection.commit(function (err) {
           //console.log("Mensaje desde el commit");
@@ -755,7 +769,7 @@ module.exports.updateOrder = (event, context, callback) => {
         }); //Fin commit
 
 
-      }else if(results[0].estado == 1 && datade != "" && data_producto != ""){
+      }else if((results[0].estado == 1 || results[0].estado == 3 )&& datade != "" && data_producto != ""){
     connection.query('UPDATE pos.orden SET ? WHERE pos.orden.idorden = ?', [data, body.idorden], function (error, results, fields) { //[body.todo, event.pathParameters.todo]
       if (error) {
         return connection.rollback(function () {
@@ -842,7 +856,7 @@ module.exports.updateOrder = (event, context, callback) => {
         }); //fin del query para eliminar detalle de producto
       }); //fin del query para eliminar detalle de orden
     }); //final query principal
-  }else if (results[0].estado == 1 && datade != "" && data_producto == "") {
+  }else if ((results[0].estado == 1 || results[0].estado == 3 ) && datade != "" && data_producto == "") {
     connection.query('UPDATE pos.orden SET ? WHERE pos.orden.idorden = ?', [data, body.idorden], function (error, results, fields) { //[body.todo, event.pathParameters.todo]
       if (error) {
         return connection.rollback(function () {
@@ -911,7 +925,7 @@ module.exports.updateOrder = (event, context, callback) => {
       }); //fin del query para eliminar detalle de orden
     }); //final query principal
   }
-  else if (results[0].estado == 1 && datade == "" ) {
+  else if ((results[0].estado == 1 || results[0].estado == 3 ) && datade == "" ) {
     callback(null, {
       statusCode: 200,
       headers: {
