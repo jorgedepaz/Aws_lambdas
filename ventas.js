@@ -364,7 +364,7 @@ let validation = new Validator(body, rules);
           });
         }
         
-        if (results100[0].estado == 0) {//if para verificar que la orden esta activa
+        if (results100[0].estado == 1) {//if para verificar que la orden esta activa
           //no se podra vender si es una orden ya facturada o una orden cancelada
           
         
@@ -384,7 +384,7 @@ let validation = new Validator(body, rules);
             console.log("Orden sin detalle de productos");
 
             if (datade == "") { //Para las ordenes vinculadas sin productos y los documentos de ventas sin productos caso de venta de servicio
-              data.estado = 0;
+              data.estado = 2;
               connection.query('INSERT INTO pos.documento_venta SET ?', [data], function (error, results1, fields) { //query para insertar el documento venta
                 if (error) {
                   return connection.rollback(function () {
@@ -392,7 +392,7 @@ let validation = new Validator(body, rules);
                   });
                 }
                 idG = results1.insertId;
-                connection.query('UPDATE pos.orden SET estado = 1 WHERE idorden = ?', [data.idorden], function (error, results2, fields) { //query para actualizar a facturada la orden
+                connection.query('UPDATE pos.orden SET estado = 2 WHERE idorden = ?', [data.idorden], function (error, results2, fields) { //query para actualizar a facturada la orden
                   if (error) {
                     return connection.rollback(function () {
                       throw error;
@@ -438,7 +438,7 @@ let validation = new Validator(body, rules);
                 existencia = results
                 console.log('Existencias que hay en la sucursal del usuario');
                 console.log(existencia);
-                data.estado = 0;
+                data.estado = 2;
                 connection.query('INSERT INTO pos.documento_venta SET ?', [data], function (error, results1, fields) { //query para insertar el documento venta
                   if (error) {
                     return connection.rollback(function () {
@@ -521,7 +521,7 @@ let validation = new Validator(body, rules);
                             throw error;
                           });
                         }
-                        connection.query('UPDATE pos.orden SET estado = 1 WHERE idorden = ?', [data.idorden], function (error, results2, fields) { //query para actualizar a facturada la orden
+                        connection.query('UPDATE pos.orden SET estado = 2 WHERE idorden = ?', [data.idorden], function (error, results2, fields) { //query para actualizar a facturada la orden
                           if (error) {
                             return connection.rollback(function () {
                               throw error;
@@ -574,7 +574,7 @@ let validation = new Validator(body, rules);
                 existencia = results
                 console.log('Existencias que hay en la sucursal del usuario');
                 console.log(existencia);
-                data.estado = 0;
+                data.estado = 2;
 
                 connection.query('INSERT INTO pos.documento_venta SET ?', [data], function (error, results1, fields) { //query para insertar el documento venta
                   if (error) {
@@ -616,7 +616,7 @@ let validation = new Validator(body, rules);
                   console.log(resta2);
 
 
-                  connection.query('UPDATE pos.orden SET estado = 1 WHERE idorden = ?', [data.idorden], function (error, results2, fields) { //query para actualizar a facturada la orden
+                  connection.query('UPDATE pos.orden SET estado = 2 WHERE idorden = ?', [data.idorden], function (error, results2, fields) { //query para actualizar a facturada la orden
                     if (error) {
                       return connection.rollback(function () {
                         throw error;
@@ -691,7 +691,7 @@ let validation = new Validator(body, rules);
                 existencia = results
                 console.log('Existencias que hay en la sucursal del usuario');
                 console.log(existencia);
-                data.estado = 0;
+                data.estado = 2;
 
                 connection.query('INSERT INTO pos.documento_venta SET ?', [data], function (error, results1, fields) { //query para insertar el documento venta
                   if (error) {
@@ -778,7 +778,7 @@ let validation = new Validator(body, rules);
                   throw error;
                 });
               }
-                  connection.query('UPDATE pos.orden SET estado = 1 WHERE idorden = ?', [data.idorden], function (error, results2, fields) { //query para actualizar a facturada la orden
+                  connection.query('UPDATE pos.orden SET estado = 2 WHERE idorden = ?', [data.idorden], function (error, results2, fields) { //query para actualizar a facturada la orden
                     if (error) {
                       return connection.rollback(function () {
                         throw error;
@@ -1297,7 +1297,7 @@ module.exports.cancelSale = (event, context, callback) => {
             console.log("Orden sin detalle de productos");
 
             if (datade == "") { //Para las ordenes vinculadas sin productos y los documentos de ventas sin productos caso de venta de servicio
-              data.estado = 0;
+              data.estado = 2;
               connection.query('INSERT INTO pos.documento_venta SET ?', [data], function (error, results1, fields) { //query para insertar el documento venta
                 if (error) {
                   return connection.rollback(function () {
@@ -1305,7 +1305,7 @@ module.exports.cancelSale = (event, context, callback) => {
                   });
                 }
                 idG = results1.insertId;
-                connection.query('UPDATE pos.orden SET estado = 1 WHERE idorden = ?', [data.idorden], function (error, results2, fields) { //query para actualizar a facturada la orden
+                connection.query('UPDATE pos.orden SET estado = 2 WHERE idorden = ?', [data.idorden], function (error, results2, fields) { //query para actualizar a facturada la orden
                   if (error) {
                     return connection.rollback(function () {
                       throw error;
@@ -1351,7 +1351,7 @@ module.exports.cancelSale = (event, context, callback) => {
                 existencia = results
                 console.log('Existencias que hay en la sucursal del usuario');
                 console.log(existencia);
-                data.estado = 0;
+                data.estado = 2;
                 connection.query('INSERT INTO pos.documento_venta SET ?', [data], function (error, results1, fields) { //query para insertar el documento venta
                   if (error) {
                     return connection.rollback(function () {
@@ -1434,7 +1434,7 @@ module.exports.cancelSale = (event, context, callback) => {
                             throw error;
                           });
                         }
-                        connection.query('UPDATE pos.orden SET estado = 1 WHERE idorden = ?', [data.idorden], function (error, results2, fields) { //query para actualizar a facturada la orden
+                        connection.query('UPDATE pos.orden SET estado = 2 WHERE idorden = ?', [data.idorden], function (error, results2, fields) { //query para actualizar a facturada la orden
                           if (error) {
                             return connection.rollback(function () {
                               throw error;
@@ -1487,7 +1487,7 @@ module.exports.cancelSale = (event, context, callback) => {
                 existencia = results
                 console.log('Existencias que hay en la sucursal del usuario');
                 console.log(existencia);
-                data.estado = 0;
+                data.estado = 2;
 
                 connection.query('INSERT INTO pos.documento_venta SET ?', [data], function (error, results1, fields) { //query para insertar el documento venta
                   if (error) {
@@ -1529,7 +1529,7 @@ module.exports.cancelSale = (event, context, callback) => {
                   console.log(resta2);
 
 
-                  connection.query('UPDATE pos.orden SET estado = 1 WHERE idorden = ?', [data.idorden], function (error, results2, fields) { //query para actualizar a facturada la orden
+                  connection.query('UPDATE pos.orden SET estado = 2 WHERE idorden = ?', [data.idorden], function (error, results2, fields) { //query para actualizar a facturada la orden
                     if (error) {
                       return connection.rollback(function () {
                         throw error;
@@ -1604,7 +1604,7 @@ module.exports.cancelSale = (event, context, callback) => {
                 existencia = results
                 console.log('Existencias que hay en la sucursal del usuario');
                 console.log(existencia);
-                data.estado = 0;
+                data.estado = 2;
 
                 connection.query('INSERT INTO pos.documento_venta SET ?', [data], function (error, results1, fields) { //query para insertar el documento venta
                   if (error) {
@@ -1691,7 +1691,7 @@ module.exports.cancelSale = (event, context, callback) => {
                   throw error;
                 });
               }
-                  connection.query('UPDATE pos.orden SET estado = 1 WHERE idorden = ?', [data.idorden], function (error, results2, fields) { //query para actualizar a facturada la orden
+                  connection.query('UPDATE pos.orden SET estado = 2 WHERE idorden = ?', [data.idorden], function (error, results2, fields) { //query para actualizar a facturada la orden
                     if (error) {
                       return connection.rollback(function () {
                         throw error;

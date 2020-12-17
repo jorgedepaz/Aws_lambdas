@@ -724,11 +724,11 @@ module.exports.updateOrder = (event, context, callback) => {
           throw error;
         });
       }
-      
+
       console.log('Muestra el estado de la orden');
       console.log(results);
       console.log(results[0].estado);
-      if (results[0].estado == 1||results[0].estado == 2) {
+      if (results[0].estado == 2||results[0].estado == 3) {
         
         connection.commit(function (err) {
           //console.log("Mensaje desde el commit");
@@ -755,7 +755,7 @@ module.exports.updateOrder = (event, context, callback) => {
         }); //Fin commit
 
 
-      }else if(results[0].estado == 0 && datade != "" && data_producto != ""){
+      }else if(results[0].estado == 1 && datade != "" && data_producto != ""){
     connection.query('UPDATE pos.orden SET ? WHERE pos.orden.idorden = ?', [data, body.idorden], function (error, results, fields) { //[body.todo, event.pathParameters.todo]
       if (error) {
         return connection.rollback(function () {
@@ -842,7 +842,7 @@ module.exports.updateOrder = (event, context, callback) => {
         }); //fin del query para eliminar detalle de producto
       }); //fin del query para eliminar detalle de orden
     }); //final query principal
-  }else if (results[0].estado == 0 && datade != "" && data_producto == "") {
+  }else if (results[0].estado == 1 && datade != "" && data_producto == "") {
     connection.query('UPDATE pos.orden SET ? WHERE pos.orden.idorden = ?', [data, body.idorden], function (error, results, fields) { //[body.todo, event.pathParameters.todo]
       if (error) {
         return connection.rollback(function () {
@@ -911,7 +911,7 @@ module.exports.updateOrder = (event, context, callback) => {
       }); //fin del query para eliminar detalle de orden
     }); //final query principal
   }
-  else if (results[0].estado == 0 && datade == "" ) {
+  else if (results[0].estado == 1 && datade == "" ) {
     callback(null, {
       statusCode: 200,
       headers: {
@@ -1708,7 +1708,7 @@ let validation = new Validator(body, rules);
     fecha_entrega: body.fecha_entrega,
     tipo: body.tipo,
     idusuario: body.idusuario,
-    estado: body.estado,
+    estado: 1,
     descripcion: body.descripcion,
     referencia: body.referencia
   };
