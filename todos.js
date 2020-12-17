@@ -647,7 +647,7 @@ module.exports.updateOrder = (event, context, callback) => {
     referencia: 'required|string|max:100',
     'detalle.*.idservicio': 'required|integer',
     'detalle.*.precio': 'required|numeric',
-    'detalle.*.comentario': 'required|string|max:100',
+    'detalle.*.comentario': 'string|max:100',
     'detalle.*.descuento': 'required|numeric',
     'detalle.*.total': 'required|numeric',
     'detalle.*.estado': 'required|integer',
@@ -671,7 +671,7 @@ module.exports.updateOrder = (event, context, callback) => {
     referencia: 'required|string|max:100',
     'detalle.*.idservicio': 'required|integer',
     'detalle.*.precio': 'required|numeric',
-    'detalle.*.comentario': 'required|string|max:100',
+    'detalle.*.comentario': 'string|max:100',
     'detalle.*.descuento': 'required|numeric',
     'detalle.*.total': 'required|numeric',
     'detalle.*.estado': 'required|integer'
@@ -727,7 +727,7 @@ module.exports.updateOrder = (event, context, callback) => {
       console.log('Muestra el estado de la orden');
       console.log(results);
       console.log(results[0].estado);
-      if (results[0].estado == 1) {
+      if (results[0].estado == 1||results[0].estado == 2) {
         
         connection.commit(function (err) {
           //console.log("Mensaje desde el commit");
@@ -1667,7 +1667,7 @@ module.exports.createOrder = (event, context, callback) => {
       referencia: 'required|string|max:100',
       'detalle.*.idservicio': 'required|integer',
       'detalle.*.precio': 'required|numeric',
-      'detalle.*.comentario': 'required|string|max:100',
+      'detalle.*.comentario': 'string|max:100',
       'detalle.*.descuento': 'required|numeric',
       'detalle.*.total': 'required|numeric',
       'detalle.*.estado': 'required|integer',
@@ -1690,7 +1690,7 @@ module.exports.createOrder = (event, context, callback) => {
       referencia: 'required|string|max:100',
       'detalle.*.idservicio': 'required|integer',
       'detalle.*.precio': 'required|numeric',
-      'detalle.*.comentario': 'required|string|max:100',
+      'detalle.*.comentario': 'string|max:100',
       'detalle.*.descuento': 'required|numeric',
       'detalle.*.total': 'required|numeric',
       'detalle.*.estado': 'required|integer'

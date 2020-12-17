@@ -357,6 +357,18 @@ let validation = new Validator(body, rules);
         } //Final del else que verifica si existe detalle de documento de venta
       } //final del if para verificar si existe una orden vinculada o no
       else { //Else para trabajar con ordenes vinculadas
+      connection.query('SELECT estado FROM pos.orden WHERE pos.orden.idorden = ?', [data.idorden], function (error, results100, fields) { //query para ontener el producto de la orden
+        if (error) {
+          return connection.rollback(function () {
+            throw error;
+          });
+        }
+        
+        if (results100[0].estado == 0) {//if para verificar que la orden esta activa
+          //no se podra vender si es una orden ya facturada o una orden cancelada
+          
+        
+      
         connection.query('SELECT * FROM pos.detalle_producto WHERE pos.detalle_producto.idorden = ?', [data.idorden], function (error, results10, fields) { //query para ontener el producto de la orden
           if (error) {
             return connection.rollback(function () {
@@ -835,7 +847,25 @@ let validation = new Validator(body, rules);
             }
           }
         })
-      }
+        }// final del if para verificar que la orden esta activa
+        else{
+          callback(null, {
+            statusCode: 500,
+            headers: {
+      
+              'Access-Control-Allow-Origin': '*',
+      
+              'Access-Control-Allow-Credentials': true,
+      
+            },
+            body: JSON.stringify({
+              message: 'No se puede realizar la venta con una orden facturada o cancelada'
+            })
+          })
+        }
+      })//final de la query para saber si la orden esta cancelada, activa o facturada
+    }//else para trabajar con ordenes vinculadas
+    
     }); //Final del query designar la sucursal
   }); //final begin transaction
   }//final del if para la validacion
@@ -1059,40 +1089,8 @@ module.exports.cancelSale = (event, context, callback) => {
   var UsuarioSucursal
   var SucursalVenta
 
-  //---------------------------------------
-  var rules = {};
-
-  if(body.detalle != ""){
-    rules = {
-      idcliente: 'integer',
-      numero: 'integer',
-      fecha: 'required|date',
-      idusuario: 'required|integer',
-      total: 'required|numeric',
-      estado: 'integer',
-      idpago: 'integer',
-      idorden: 'integer',
-      referencia: 'string|max:100',
-      'detalle.*.idproducto': 'required|integer',
-      'detalle.*.cantidad': 'integer',
-      'detalle.*.precio_venta': 'required|numeric',
-      'detalle.*.tipo_precio': 'required|integer',
-    };
-  }else if (body.detalle == "") {
-    rules = {
-    idcliente: 'integer',
-    numero: 'integer',
-    fecha: 'required|date',
-    idusuario: 'required|integer',
-    total: 'required|numeric',
-    estado: 'integer',
-    idpago: 'integer',
-    idorden: 'integer',
-    referencia: 'string|max:100'
-    }
-  }
-let validation = new Validator(body, rules);
-  if (validation.passes()) {
+  var numeroVenta = [event.pathParameters.numero]
+ 
   //---------------------------------------
 
   var data = {
@@ -1107,17 +1105,6 @@ let validation = new Validator(body, rules);
     idorden: body.idorden,
     referencia: body.referencia
   };
-  // Obteniendo todas las claves del JSON
-
-  for (var clave in data) {
-    // Controlando que json realmente tenga esa propiedad
-    if (data.hasOwnProperty(clave)) {
-      // Mostrando en pantalla la clave junto a su valor
-      if (data[clave] == "") {
-        data[clave] = null;
-      }
-    }
-  }
 
   var datade = body.detalle;
   console.log("Estos son los productos de la compra");
@@ -1776,21 +1763,6 @@ let validation = new Validator(body, rules);
       }
     }); //Final del query designar la sucursal
   }); //final begin transaction
-  }//final del if para la validacion
-  else{
-    callback(null, {
-      statusCode: 500,
-      headers: {
-
-        'Access-Control-Allow-Origin': '*',
-
-        'Access-Control-Allow-Credentials': true,
-
-      },
-      body: JSON.stringify({
-        message: 'Datos no validos'
-      })
-    })
-  }
+ 
 
 }; //final de la funcion
