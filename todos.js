@@ -705,6 +705,7 @@ module.exports.updateOrder = (event, context, callback) => {
       }
     }
   }
+ /*   verificar este vergueo des pues, esto es seguridad por si envian un json desde un lugar extraño
 if ((data.estado == 2) ||(data<1) || (data>3)){
   callback(null, {
     statusCode: 500,
@@ -719,7 +720,7 @@ if ((data.estado == 2) ||(data<1) || (data>3)){
       message: 'No se puede colocar una orden como facturada, 1: para activarla 2: para cancelarla'
     })
   })
-}
+}*/
   var datade = body.detalle;
   var data_producto = body.detalle_producto;
 
