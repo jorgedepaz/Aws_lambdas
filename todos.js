@@ -2389,6 +2389,117 @@ module.exports.createBrand = (event, context, callback) => { //crear marca
   }
 
 }; //final de la funcion
+module.exports.updateProduct = (event, context, callback) => { //No desarrollado
+  context.callbackWaitsForEmptyEventLoop = false;
+  const body = JSON.parse(event.body);
+//----------------------------------------
+var rules = {
+  idproducto: 'required|integer',
+  codigo: 'required|string|max:45',
+  nombre: 'required|string|max:45',
+  descripcion: 'required|string|max:255',
+  idmarca: 'required|integer',
+  idcategoria: 'required|integer',
+  modelo: 'string|max:45',
+  talla: 'string|max:5',
+  min: 'integer',
+  max: 'integer',
+  costo: 'required|numeric',
+  estado: 'integer',
+  linea: 'string|max:45',
+  observacion: 'string|max:60'
+};
+
+  
+let validation = new Validator(body, rules);
+  if (validation.passes()) {
+//----------------------------------------
+
+  var data = {
+    idproducto: body.idproducto,
+    codigo: body.codigo,
+    nombre: body.nombre,
+    descripcion: body.descripcion,
+    idmarca: body.idmarca,
+    idcategoria: body.idcategoria,
+    modelo: body.modelo,
+    talla: body.talla,
+    min: body.min,
+    max: body.max,
+    costo: body.costo,
+    estado: body.estado,
+    linea: body.linea,
+    observacion: body.observacion
+  };
+  // Obteniendo todas las claves del JSON
+
+
+
+  connection.beginTransaction(function (err) {
+    var idG;
+    if (err) {
+      throw err;
+    }
+    connection.query('UPDATE pos.producto SET ? WHERE pos.producto.idproducto = ?', [data,data.idproducto], function (error, results, fields) {
+      if (error) {
+        return connection.rollback(function () {
+          throw error;
+        });
+      }
+
+      idG = results.insertId;
+
+      connection.commit(function (err) { ///
+        console.log("Mensaje desde el commit");
+        if (err) {
+          return connection.rollback(function () {
+            throw err;
+          });
+        } else {
+          callback(null, {
+            statusCode: 200,
+            headers: {
+
+              'Access-Control-Allow-Origin': '*',
+
+              'Access-Control-Allow-Credentials': true,
+
+            },
+            body: JSON.stringify({
+              message: 'producto actualizado correctamente',
+              id: idG
+            })
+          })
+        }
+
+        //--------------------------------
+      }); //Fin commit
+
+
+
+
+
+    }); //final query principal
+  }); //final begin transaction
+  }//final de la validacion
+  else{
+    callback(null, {
+      statusCode: 500,
+      headers: {
+
+        'Access-Control-Allow-Origin': '*',
+
+        'Access-Control-Allow-Credentials': true,
+
+      },
+      body: JSON.stringify({
+        message: 'Datos no validos'
+      })
+    })
+
+  }
+
+}; //final de la funcion
 module.exports.createProduct = (event, context, callback) => { //No desarrollado
   context.callbackWaitsForEmptyEventLoop = false;
   const body = JSON.parse(event.body);
@@ -2466,7 +2577,7 @@ let validation = new Validator(body, rules);
             },
             body: JSON.stringify({
               message: 'producto insertado correctamente',
-              id: idG
+              id: data.idproducto
             })
           })
         }
