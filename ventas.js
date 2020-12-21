@@ -907,7 +907,7 @@ var rules = {
 
  
 let validation = new Validator(body, rules);
-  if (validation.passes()) {
+  if (validation.passes() && body.detalle != "") {
 //---------------------------------------------
 
   var data = {
@@ -1073,7 +1073,7 @@ else{
 
     },
     body: JSON.stringify({
-      message: 'Datos no validos'
+      message: 'Datos no validos o no existe detalle de compra'
     })
   })
 }
@@ -1089,24 +1089,24 @@ module.exports.cancelSale = (event, context, callback) => {
   var SucursalVenta;
  
   var numeroVenta = body.id;
-  
+  //console.log(body);
     
   
   
-/*
-  var data = {
+
+  var data_venta = {
     iddocumento_venta: null,
-    idcliente: body.idcliente,
-    numero: body.numero,
-    fecha: body.fecha,
-    idusuario: body.idusuario,
-    total: body.total,
-    estado: body.estado,
-    idpago: body.idpago,
-    idorden: body.idorden,
-    referencia: body.referencia
+    idcliente: null,
+    numero: null,
+    fecha: null,
+    idusuario: null,
+    total: null,
+    estado: null,
+    idpago: null,
+    idorden: null,
+    referencia: null
   };
-*/
+
 
   connection.beginTransaction(function (err) {
     var idG;
@@ -1114,13 +1114,13 @@ module.exports.cancelSale = (event, context, callback) => {
       throw err;
     }
     if (body.documento == 'venta') {//para las cancelaciones de ventas
-    connection.query('SELECT * from pos.documento_venta WHERE iddocumento_venta=?',[numeroVenta], function (error, results0, fields) { //query para determinar la sucursal del usuario
+    connection.query('SELECT * from pos.documento_venta WHERE iddocumento_venta=?',[numeroVenta], function (error, results, fields) { //query para determinar la sucursal del usuario
       if (error) {
         return connection.rollback(function () {
           throw error;
         });
       }
-      if (results0 == "") {
+      if (results == "") {//para verificar que existe el documento de venta
         callback(null, {
           statusCode: 500,
           headers: {
@@ -1134,30 +1134,51 @@ module.exports.cancelSale = (event, context, callback) => {
             message: 'No existe la venta buscada'
           })
         })
-      }
-      console.log("vergueo para probar si pasa despues de que haga un callback");
-      connection.commit(function (err) {
-        console.log("Mensaje desde el commit");
-        if (err) {
-          return connection.rollback(function () {
-            throw err;
-          });
-        } else {
-          callback(null, {
-            statusCode: 200,
-            headers: {
+      }else{// Si existe el documento de venta entonces
+        data_venta =results[0];
+        console.log("Datos de la venta");
+        console.log(data_venta);
+        if (data_venta.idorden == null) {//codigo para reintegrar unicamente el detalle de doc. venta
+          
+          connection.query('SELECT * from pos.detalle_documento_venta WHERE iddocumento_venta=?',[numeroVenta], function (error, results, fields) { //query para obtener los detalles del doc. de venta
+            if (error) {
+              return connection.rollback(function () {
+                throw error;
+              });
+            }
 
-              'Access-Control-Allow-Origin': '*',
+          var detalle_venta = results;
+          console.log("Detalle de doc. venta");
+          console.log(detalle_venta);
+          
+          connection.commit(function (err) {
+            console.log("Mensaje desde el commit");
+            if (err) {
+              return connection.rollback(function () {
+                throw err;
+              });
+            } else {
+              callback(null, {
+                statusCode: 200,
+                headers: {
+    
+                  'Access-Control-Allow-Origin': '*',
+    
+                  'Access-Control-Allow-Credentials': true,
+    
+                },
+                body: JSON.stringify({
+                  message: 'Caso de reintegracion del detalle de documentos de venta'
+                })
+              })
+            }
+          }); //Fin commit
+          });// final de la query para obtener los productos del detalle de venta
+        }// final de la verificacion de que no tiene orden vinculada
 
-              'Access-Control-Allow-Credentials': true,
-
-            },
-            body: JSON.stringify({
-              message: 'Final de la funcion para ventas'
-            })
-          })
-        }
-      }); //Fin commit
+        
+      }//final del else para trabajar con documentos que si existen
+      
     })//final primera Query
   }//final de las cancelaciones de ventas
   else if (body.documento == 'compra') {//cancelaciones de compras
