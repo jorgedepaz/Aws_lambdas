@@ -402,6 +402,7 @@ module.exports.findOrders = (event, context, callback) => {
     estado: null,
     descripcion: null,
     referencia: null,
+    //idsucursal: null,
     detalle: null
   };
   var data = {};
@@ -438,7 +439,8 @@ module.exports.findOrders = (event, context, callback) => {
               idusuario: data[index].idusuario,
               estado: data[index].estado,
               descripcion: data[index].descripcion,
-              referencia: data[index].referencia
+              referencia: data[index].referencia,
+              //idsucursal: data[index].idsucursal
             }
             result[index] = data3;
             for (let index2 = 0; index2 < data2.length; index2++) {
@@ -526,6 +528,7 @@ module.exports.findOrder = (event, context, callback) => {
     estado: null,
     descripcion: null,
     referencia: null,
+    idsucursal: null,
     detalle: null,
     detalle_producto: null
   };
@@ -574,6 +577,7 @@ module.exports.findOrder = (event, context, callback) => {
                 data3.estado = rows[0].estado;
                 data3.descripcion = rows[0].descripcion;
                 data3.referencia = rows[0].referencia;
+                data3.idsucursal = rows[0].idsucursal;
                 data3.detalle = rows2;
                 data3.detalle_producto = rows3;
 
