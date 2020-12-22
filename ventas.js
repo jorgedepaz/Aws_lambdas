@@ -1112,6 +1112,8 @@ module.exports.cancelSale = (event, context, callback) => {
             throw error;
           });
         }
+        data_venta = results[0];
+        SucursalVenta = results[0].idsucursal;
         if (results == "") { //para verificar que existe el documento de venta
           callback(null, {
             statusCode: 500,
@@ -1126,17 +1128,36 @@ module.exports.cancelSale = (event, context, callback) => {
               message: 'No existe la venta buscada'
             })
           })
-        } else { // Si existe el documento de venta entonces
-          data_venta = results[0];
-          SucursalVenta = results[0].idsucursal;
-          
-                  
+        }else if (data_venta.estado == 3) {//si el documento de venta esta cancelado agregar or para las compras
+          callback(null, {
+            statusCode: 500,
+            headers: {
+        
+              'Access-Control-Allow-Origin': '*',
+        
+              'Access-Control-Allow-Credentials': true,
+        
+            },
+            body: JSON.stringify({
+              message: 'El documento de venta ya fue cancelado, no es posible volver a cancelar'
+            })
+          })
+        }
+        else { // Si existe el documento de venta entonces
+
+                  //hacer el update de que esta cancelada a venta
             console.log("ID sucursal donde trabaja el usuario que esta haciendo la venta");
             console.log(SucursalVenta);
 
             
             console.log("Datos de la venta");
             console.log(data_venta);
+            connection.query('UPDATE pos.documento_venta SET estado = 3 WHERE iddocumento_venta = ?', [data_venta.iddocumento_venta], function (error, results2, fields) { //query para actualizar a facturada la orden
+              if (error) {
+                return connection.rollback(function () {
+                  throw error;
+                });
+              }
             //armar los datos para realizar la consulta para obtener solo los productos que estan pidiendo
             //let sqlDelete = resta2.map(item => `(${item.idproducto})`);
             //var queryDeleteProductoSucursal = "SELECT * FROM pos.producto_sucursal WHERE idproducto IN (" + sqlDelete + ") and pos.producto_sucursal.idsucursal = ?";
@@ -1220,7 +1241,7 @@ module.exports.cancelSale = (event, context, callback) => {
                         },
                         body: JSON.stringify({
                           message: 'Caso de reintegracion del detalle de documentos de venta',
-                          Id: results.insertId
+                          Id: data_venta.iddocumento_venta
                         })
                       })
                     }
@@ -1229,9 +1250,60 @@ module.exports.cancelSale = (event, context, callback) => {
                 }); //final de la query para obtener la existencia en la sucursal
                 }); // final de la query para obtener los productos del detalle de venta
               } // final de la verificacion de que no tiene orden vinculada
-            
-         
+              else{//Else para trabajar con documentos de venta con ordenes vinculadas
+                //consultar los detalles de orden de la orden vinculada
+                connection.query('SELECT * FROM pos.detalle_producto WHERE pos.detalle_producto.idorden = ?', [data_venta.idorden], function (error, results10, fields) { //query para ontener el producto de la orden
+                  if (error) {
+                    return connection.rollback(function () {
+                      throw error;
+                    });
+                  }
+                  console.log("Detalle de orden");
+                  console.log(results10);
 
+                  if (results10 == "") {// si la orden vinculada no tiene productos
+                    //Query para ver si tiene productos el detalle del doc venta
+                    connection.query('SELECT * FROM pos.detalle_documento_venta WHERE iddocumento_venta = ?', [data_venta.iddocumento_venta], function (error, results101, fields) { //query para ontener el producto de la orden
+                      if (error) {
+                        return connection.rollback(function () {
+                          throw error;
+                        });
+                      }
+                      detalle_venta =results101;
+                      console.log("Detalle documento de venta");
+                      console.log(detalle_venta);
+
+                      if (detalle_venta == "") {
+                        connection.query('UPDATE pos.documento_venta SET estado = 3 WHERE iddocumento_venta = ?', [data_venta.iddocumento_venta], function (error, results2, fields) { //query para actualizar a facturada la orden
+                          if (error) {
+                            return connection.rollback(function () {
+                              throw error;
+                            });
+                          }
+                          callback(null, {
+                            statusCode: 500,
+                            headers: {
+    
+                              'Access-Control-Allow-Origin': '*',
+    
+                              'Access-Control-Allow-Credentials': true,
+    
+                            },
+                            body: JSON.stringify({
+                              message: 'Caso de cancelacion de venta sin reintegracion de productos'
+                              
+                            })
+                          })
+
+                        });
+                      }
+                    });//Final de la query para ver si tiene productos el detalle del doc venta
+                  }
+                });//Final de la query para el detalle de producto de la orden
+
+              }
+         
+            });//Final query para actualizar el estado del documento de venta
         } //final del else para trabajar con documentos que si existen
 
       }) //final primera Query
@@ -1252,4 +1324,5 @@ module.exports.cancelSale = (event, context, callback) => {
       })
     } //final del else if para cancelaciones de compras
   }) //final de la transaccion
+
 }; //final de la funcion
