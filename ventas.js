@@ -1195,6 +1195,13 @@ module.exports.cancelSale = (event, context, callback) => {
                  console.log(sqlAct);
                  console.log(queryActualizarInventario);
 
+                 connection.query(queryActualizarInventario, function (error, results, fields) { //query para obtener la existencias de la sucursal del usuario
+                  if (error) {
+                    return connection.rollback(function () {
+                      throw error;
+                    });
+                  }
+                  
                   connection.commit(function (err) {
                     console.log("Mensaje desde el commit");
                     if (err) {
@@ -1212,11 +1219,13 @@ module.exports.cancelSale = (event, context, callback) => {
 
                         },
                         body: JSON.stringify({
-                          message: 'Caso de reintegracion del detalle de documentos de venta'
+                          message: 'Caso de reintegracion del detalle de documentos de venta',
+                          Id: results.insertId
                         })
                       })
                     }
                   }); //Fin commit
+                });//Final de la query para insertar nuevas existencias
                 }); //final de la query para obtener la existencia en la sucursal
                 }); // final de la query para obtener los productos del detalle de venta
               } // final de la verificacion de que no tiene orden vinculada
