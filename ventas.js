@@ -134,6 +134,7 @@ module.exports.sale = (event, context, callback) => {
       estado: 'integer',
       idpago: 'integer',
       idorden: 'integer',
+      idsucursal: 'required|integer',
       referencia: 'string|max:100',
       'detalle.*.idproducto': 'required|integer',
       'detalle.*.cantidad': 'integer',
@@ -150,6 +151,7 @@ module.exports.sale = (event, context, callback) => {
       estado: 'integer',
       idpago: 'integer',
       idorden: 'integer',
+      idsucursal: 'required|integer',
       referencia: 'string|max:100'
     }
   }
@@ -167,7 +169,8 @@ module.exports.sale = (event, context, callback) => {
       estado: body.estado,
       idpago: body.idpago,
       idorden: body.idorden,
-      referencia: body.referencia
+      referencia: body.referencia,
+      idsucursal: body.idsucursal
     };
     // Obteniendo todas las claves del JSON
 
@@ -180,7 +183,7 @@ module.exports.sale = (event, context, callback) => {
         }
       }
     }
-
+    SucursalVenta =data.idsucursal;
     var datade = body.detalle;
     console.log("Estos son los productos de la compra");
 
@@ -193,23 +196,9 @@ module.exports.sale = (event, context, callback) => {
         throw err;
       }
 
-      connection.query('SELECT pos.usuario.idusuario,pos.empleado.idsucursal FROM pos.usuario INNER JOIN pos.empleado ON pos.usuario.idempleado = pos.empleado.idempleado', function (error, results0, fields) { //query para determinar la sucursal del usuario
-        if (error) {
-          return connection.rollback(function () {
-            throw error;
-          });
-        }
+     
 
-        UsuarioSucursal = results0;
-
-        for (let index = 0; index < UsuarioSucursal.length; index++) { //Ciclo para saber desde que sucursal se esta comprando
-          if (data.idusuario == UsuarioSucursal[index].idusuario) {
-            SucursalVenta = UsuarioSucursal[index].idsucursal;
-          }
-        }
-
-        console.log("Muestra los id de usuarios y las id de las sucursales");
-        console.log(UsuarioSucursal);
+        
         console.log("ID sucursal donde trabaja el usuario que esta haciendo la venta");
         console.log(SucursalVenta);
 
@@ -866,7 +855,6 @@ module.exports.sale = (event, context, callback) => {
           }) //final de la query para saber si la orden esta cancelada, activa o facturada
         } //else para trabajar con ordenes vinculadas
 
-      }); //Final del query designar la sucursal
     }); //final begin transaction
   } //final del if para la validacion
   else {
@@ -900,6 +888,7 @@ module.exports.shop = (event, context, callback) => {
     idproveedor: 'required|integer',
     total: 'numeric',
     idusuario: 'required|integer',
+    idsucursal: 'required|integer',
     'detalle.*.idproducto': 'required|integer',
     'detalle.*.cantidad': 'integer',
     'detalle.*.precio_compra': 'required|numeric',
@@ -917,7 +906,8 @@ module.exports.shop = (event, context, callback) => {
       fecha: body.fecha,
       idproveedor: body.idproveedor,
       total: body.total,
-      idusuario: body.idusuario
+      idusuario: body.idusuario,
+      idsucursal: body.idsucursal
     };
     // Obteniendo todas las claves del JSON
 
@@ -1138,14 +1128,8 @@ module.exports.cancelSale = (event, context, callback) => {
           })
         } else { // Si existe el documento de venta entonces
           data_venta = results[0];
-          connection.query('SELECT pos.empleado.idsucursal FROM pos.usuario INNER JOIN pos.empleado ON pos.usuario.idempleado = pos.empleado.idempleado WHERE pos.usuario.idusuario = ?',[data_venta.idusuario], function (error, results0, fields) { //query para determinar la sucursal del usuario
-            if (error) {
-              return connection.rollback(function () {
-                throw error;
-              });
-            }
-
-            SucursalVenta = results0[0].idsucursal;
+          SucursalVenta = results[0].idsucursal;
+          
                   
             console.log("ID sucursal donde trabaja el usuario que esta haciendo la venta");
             console.log(SucursalVenta);
@@ -1167,8 +1151,7 @@ module.exports.cancelSale = (event, context, callback) => {
                   }
                   var detalle_venta = results;
                   //var id_productos_vendidos = [];
-                  console.log("Detalle de doc. venta");
-                  console.log(detalle_venta);
+                  
                   /*  
                   for (let index = 0; index < detalle_venta.length; index++) {
                     id_productos_vendidos.push(detalle_venta[index].idproducto);                  
@@ -1184,11 +1167,33 @@ module.exports.cancelSale = (event, context, callback) => {
                         throw error;
                       });
                     }
+                    console.log("Detalle de doc. venta");
+                    console.log(detalle_venta);
                     existencia = results
                     console.log('Existencias que hay de los productos vendidos en la sucursal del usuario');
                     console.log(existencia);
-
-                 
+                    var suma = [];
+                    var nuevaExistencia = {}
+                    //-----------------------para agragar las nuevas eistencias
+                    for (let index = 0; index < detalle_venta.length; index++) { //En este ciclo anidado se comprobaria existencia si no utilizamos inventario negativo
+                      for (let index2 = 0; index2 < existencia.length; index2++) { //utilizar try catch
+                        if (detalle_venta[index].idproducto == existencia[index2].idproducto) {
+                          nuevaExistencia = {}
+                          nuevaExistencia.idproducto = detalle_venta[index].idproducto
+                          nuevaExistencia.idsucursal = SucursalVenta
+                          nuevaExistencia.existencia = existencia[index2].existencia + detalle_venta[index].cantidad
+                          suma.push(nuevaExistencia)
+                        }
+                      }
+                    }
+                    console.log(suma);
+                    //-----------------------------insertar las nuevas existencias
+                    
+                    //------------------------------------------------------------
+                 let sqlAct = suma.map(item => `(${item.idproducto},${item.idsucursal},${item.existencia})`);
+                 var queryActualizarInventario = "INSERT INTO pos.producto_sucursal (idproducto, idsucursal, existencia) VALUES"+sqlAct+"ON DUPLICATE KEY UPDATE existencia=VALUES(existencia)"
+                 console.log(sqlAct);
+                 console.log(queryActualizarInventario);
 
                   connection.commit(function (err) {
                     console.log("Mensaje desde el commit");
@@ -1216,7 +1221,7 @@ module.exports.cancelSale = (event, context, callback) => {
                 }); // final de la query para obtener los productos del detalle de venta
               } // final de la verificacion de que no tiene orden vinculada
             
-          }); //final de la query para saber en que sucursal  se esta vendiendo
+         
 
         } //final del else para trabajar con documentos que si existen
 

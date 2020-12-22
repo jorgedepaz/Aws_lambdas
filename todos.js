@@ -645,6 +645,7 @@ module.exports.updateOrder = (event, context, callback) => {
     estado: 'integer',
     descripcion: 'string|max:255',
     referencia: 'required|string|max:100',
+    idusuario: 'required|integer',
     'detalle.*.idservicio': 'required|integer',
     'detalle.*.precio': 'required|numeric',
     'detalle.*.comentario': 'string|max:100',
@@ -669,6 +670,7 @@ module.exports.updateOrder = (event, context, callback) => {
     estado: 'integer',
     descripcion: 'string|max:255',
     referencia: 'required|string|max:100',
+    idsucursal:'required|integer',
     'detalle.*.idservicio': 'required|integer',
     'detalle.*.precio': 'required|numeric',
     'detalle.*.comentario': 'string|max:100',
@@ -694,7 +696,8 @@ module.exports.updateOrder = (event, context, callback) => {
       idusuario: body.idusuario,
       estado: body.estado,
       descripcion: body.descripcion,
-      referencia: body.referencia
+      referencia: body.referencia,
+      idsucursal: body.idsucursal
     };
   for (var clave in data) {
     // Controlando que json realmente tenga esa propiedad
@@ -1681,6 +1684,7 @@ module.exports.createOrder = (event, context, callback) => {
       estado: 'integer',
       descripcion: 'string|max:255',
       referencia: 'required|string|max:100',
+      idsucursal: 'required|integer',
       'detalle.*.idservicio': 'required|integer',
       'detalle.*.precio': 'required|numeric',
       'detalle.*.comentario': 'string|max:100',
@@ -1704,6 +1708,7 @@ module.exports.createOrder = (event, context, callback) => {
       estado: 'integer',
       descripcion: 'string|max:255',
       referencia: 'required|string|max:100',
+      idsucursal: 'required|integer',
       'detalle.*.idservicio': 'required|integer',
       'detalle.*.precio': 'required|numeric',
       'detalle.*.comentario': 'string|max:100',
@@ -1725,7 +1730,8 @@ let validation = new Validator(body, rules);
     idusuario: body.idusuario,
     estado: 1,
     descripcion: body.descripcion,
-    referencia: body.referencia
+    referencia: body.referencia,
+    idsucursal: body.idsucursal
   };
 
   // Obteniendo todas las claves del JSON
