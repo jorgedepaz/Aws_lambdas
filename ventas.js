@@ -1426,7 +1426,67 @@ module.exports.cancelSale = (event, context, callback) => {
                     });//Final de la query para ver si tiene productos el detalle del doc venta
                   }// Fin si la orden vinculada no tiene productos
                   else{//para el caso de orden vinculada con prodcutos en la orden
+                    connection.query('SELECT * FROM pos.detalle_documento_venta WHERE iddocumento_venta = ?', [data_venta.iddocumento_venta], function (error, results101, fields) { //query para ontener el producto de la orden
+                      if (error) {
+                        return connection.rollback(function () {
+                          throw error;
+                        });
+                      }
+                      detalle_venta =results101;
+                      console.log("Detalle documento de venta");
+                      console.log(detalle_venta);
 
+                      if (detalle_venta == "") {//si el detalle de doc.venta no tiene productos caso 4
+                        connection.commit(function (err) {
+                          console.log("Mensaje desde el commit");
+                          if (err) {
+                            return connection.rollback(function () {
+                              throw err;
+                            });
+                          } else {
+                            callback(null, {
+                              statusCode: 200,
+                              headers: {
+      
+                                'Access-Control-Allow-Origin': '*',
+      
+                                'Access-Control-Allow-Credentials': true,
+      
+                              },
+                              body: JSON.stringify({
+                                message: 'Caso 4 cancelacion de venta con productos en la orden'
+                                //Id: data_venta.iddocumento_venta
+                              })
+                            })
+                          }
+                        }); //Fin commit
+                      }//fin si el detalle de doc.venta no tiene productos caso 4
+                      else{ //Si el detalle de doc.venta tiene productos caso 3 reintegracion de ambos
+                        connection.commit(function (err) {
+                          console.log("Mensaje desde el commit");
+                          if (err) {
+                            return connection.rollback(function () {
+                              throw err;
+                            });
+                          } else {
+                            callback(null, {
+                              statusCode: 200,
+                              headers: {
+      
+                                'Access-Control-Allow-Origin': '*',
+      
+                                'Access-Control-Allow-Credentials': true,
+      
+                              },
+                              body: JSON.stringify({
+                                message: 'Caso 3 reintegracion de producto de detalle y orden'
+                                //Id: data_venta.iddocumento_venta
+                              })
+                            })
+                          }
+                        }); //Fin commit
+                      }//Fin si el detalle de doc.venta tiene productos caso 3 reintegracion de ambos
+                    });
                   }//Fin //para el caso de orden vinculada unicamente con detalle de doc ventas
                 });//Final de la query para el detalle de producto de la orden
               });
