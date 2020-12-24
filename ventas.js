@@ -949,7 +949,7 @@ module.exports.shop = (event, context, callback) => {
         const finalQuery = "INSERT INTO pos.detalle_factura_compra (idfactura_compra,idproducto,cantidad, precio_compra) VALUES " + sql
         //console.log(finalQuery)
         //console.log("query("+finalQuery+")")
-
+        
         connection.query(finalQuery, function (error, results, fields) { //para ingresar el detalle de compra
           if (error) {
             return connection.rollback(function () {
@@ -1048,7 +1048,9 @@ module.exports.shop = (event, context, callback) => {
               }); //fin para sumar los productos al inventario
             }); //fin para eliminar los productos viejos
           }); //fin para obtener las existencias de la sucursal
+          
         }); //fin del query para el detalle de compra
+      
       }); //final query principal
     }); //final begin transaction
   } //final del if para la validacion
@@ -1083,6 +1085,16 @@ module.exports.cancelSale = (event, context, callback) => {
   var detalle_venta;
   var detalle_orden;
 
+  var data_compra = {
+    idfactura_compra: null,
+    numero: null,
+    serie: null,
+    fecha: null,
+    idproveedor: null,
+    total: null,
+    idusuario: null,
+    idsucursal: null
+  };
 
 
   var data_venta = {
@@ -1618,20 +1630,167 @@ module.exports.cancelSale = (event, context, callback) => {
       }) //final primera Query
     } //final de las cancelaciones de ventas
     else if (body.documento == 'compra') { //cancelaciones de compras
-      callback(null, {
-        statusCode: 200,
-        headers: {
 
-          'Access-Control-Allow-Origin': '*',
+      connection.query('SELECT * from pos.factura_compra WHERE idfactura_compra=?', [numeroVenta], function (error, results, fields) { //query para determinar la sucursal del usuario
+        if (error) {
+          return connection.rollback(function () {
+            throw error;
+          });
+        }
+        data_compra = results[0];
+        
+        if (results == "") { //para verificar que existe el documento de venta
+          connection.commit(function (err) {
+            console.log("Mensaje desde el commit");
+            if (err) {
+              return connection.rollback(function () {
+                throw err;
+              });
+            } else {
+              callback(null, {
+                statusCode: 200,
+                headers: {
 
-          'Access-Control-Allow-Credentials': true,
+                  'Access-Control-Allow-Origin': '*',
 
-        },
-        body: JSON.stringify({
-          message: 'Final de la funcion para compras'
-        })
-      })
+                  'Access-Control-Allow-Credentials': true,
+
+                },
+                body: JSON.stringify({
+                  message: 'No existe la compra buscada'
+                })
+              })
+            }
+          }); //Fin commit
+        }else if (data_compra.estado == 3) {//si el documento de venta esta cancelado agregar or para las compras
+          connection.commit(function (err) {
+            console.log("Mensaje desde el commit");
+            if (err) {
+              return connection.rollback(function () {
+                throw err;
+              });
+            } else {
+              callback(null, {
+                statusCode: 200,
+                headers: {
+
+                  'Access-Control-Allow-Origin': '*',
+
+                  'Access-Control-Allow-Credentials': true,
+
+                },
+                body: JSON.stringify({
+                  message: 'La factura de compra ya fue cancelada, no es posible volver a cancelar'
+                })
+              })
+            }
+          }); //Fin commit
+          
+        }
+        else { // Si existe el documento de venta entonces
+          var SucursalCompra;
+          SucursalCompra = data_compra.idsucursal;
+                  //hacer el update de que esta cancelada a venta
+            console.log("ID sucursal donde trabaja el usuario que esta haciendo la venta");
+            console.log(SucursalCompra);
+
+            console.log("Datos de la venta");
+            console.log(data_compra);
+            
+            connection.query('UPDATE pos.factura_compra SET estado = 3 WHERE idfactura_compra = ?', [numeroVenta], function (error, results2, fields) { //query para actualizar a facturada la orden
+              if (error) {
+                return connection.rollback(function () {
+                  throw error;
+                });
+              }
+              
+            
+                console.log(numeroVenta);
+                connection.query('SELECT * from pos.detalle_factura_compra WHERE idfactura_compra=?', [numeroVenta], function (error, results, fields) { //query para obtener los detalles del doc. de venta
+                  if (error) {
+                    return connection.rollback(function () {
+                      throw error;
+                    });
+                  }
+                  
+                  var detalle_compra = results;
+                // productos a consultar por existencia
+                  let sqlIds = detalle_compra.map(item => `(${item.idproducto})`);
+                  console.log(sqlIds);
+                  var existenciasProductoSucursal = "SELECT * FROM pos.producto_sucursal WHERE idproducto IN (" + sqlIds + ") and idsucursal = ?";
+                  connection.query(existenciasProductoSucursal, [SucursalCompra], function (error, results, fields) { //query para obtener la existencias de la sucursal del usuario
+                    if (error) {
+                      return connection.rollback(function () {
+                        throw error;
+                      });
+                    }
+                    console.log("Detalle de doc. compra");
+                    console.log(detalle_compra);
+                    existencia = results
+                    console.log('Existencias que hay de los productos vendidos en la sucursal del usuario');
+                    console.log(existencia);
+                    var suma = [];
+                    var nuevaExistencia = {}
+                    //-----------------------para agragar las nuevas eistencias
+                    for (let index = 0; index < detalle_compra.length; index++) { //En este ciclo anidado se comprobaria existencia si no utilizamos inventario negativo
+                      for (let index2 = 0; index2 < existencia.length; index2++) { //utilizar try catch
+                        if (detalle_compra[index].idproducto == existencia[index2].idproducto) {
+                          nuevaExistencia = {}
+                          nuevaExistencia.idproducto = detalle_compra[index].idproducto
+                          nuevaExistencia.idsucursal = SucursalCompra
+                          nuevaExistencia.existencia = existencia[index2].existencia - detalle_compra[index].cantidad
+                          suma.push(nuevaExistencia)
+                        }
+                      }
+                    }
+                    console.log(suma);
+                    //-----------------------------insertar las nuevas existencias
+                    
+                    //------------------------------------------------------------
+                 let sqlAct = suma.map(item => `(${item.idproducto},${item.idsucursal},${item.existencia})`);
+                 var queryActualizarInventario = "INSERT INTO pos.producto_sucursal (idproducto, idsucursal, existencia) VALUES"+sqlAct+"ON DUPLICATE KEY UPDATE existencia=VALUES(existencia)"
+                 console.log(sqlAct);
+                 console.log(queryActualizarInventario);
+
+                 connection.query(queryActualizarInventario, function (error, results, fields) { //query para obtener la existencias de la sucursal del usuario
+                  if (error) {
+                    return connection.rollback(function () {
+                      throw error;
+                    });
+                  }
+                  
+                  connection.commit(function (err) {
+                    console.log("Mensaje desde el commit");
+                    if (err) {
+                      return connection.rollback(function () {
+                        throw err;
+                      });
+                    } else {
+                      callback(null, {
+                        statusCode: 200,
+                        headers: {
+
+                          'Access-Control-Allow-Origin': '*',
+
+                          'Access-Control-Allow-Credentials': true,
+
+                        },
+                        body: JSON.stringify({
+                          message: 'Reintegracion del detalle de documentos de compra exitoso',
+                          Id: data_compra.iddocumento_venta
+                        })
+                      })
+                    }
+                  }); //Fin commit
+                });//Final de la query para insertar nuevas existencias
+                }); //final de la query para obtener la existencia en la sucursal
+                }); // final de la query para obtener los productos del detalle de venta
+              });//final del la query para actualizar a cancelada la compra
+            }//final del else para cuando todo esta bien
+              });//final de la query principal
+          
     } //final del else if para cancelaciones de compras
   }) //final de la transaccion
 
 }; //final de la funcion
+
