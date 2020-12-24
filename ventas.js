@@ -1079,7 +1079,7 @@ module.exports.cancelSale = (event, context, callback) => {
   var existencia;
   var UsuarioSucursal;
   var SucursalVenta;
-
+  
   var numeroVenta = body.id;
   //console.log(body);
   var detalle_venta;
@@ -1118,7 +1118,7 @@ module.exports.cancelSale = (event, context, callback) => {
     }
 
     // para verifical sucursal de venta y de donde es el usuario
-    if (body.documento == 'venta') { //para las cancelaciones de ventas
+    if (body.tipo == 2) { //para las cancelaciones de ventas
       connection.query('SELECT * from pos.documento_venta WHERE iddocumento_venta=?', [numeroVenta], function (error, results, fields) { //query para determinar la sucursal del usuario
         if (error) {
           return connection.rollback(function () {
@@ -1629,7 +1629,7 @@ module.exports.cancelSale = (event, context, callback) => {
 
       }) //final primera Query
     } //final de las cancelaciones de ventas
-    else if (body.documento == 'compra') { //cancelaciones de compras
+    else if (body.tipo == 1) { //cancelaciones de compras
 
       connection.query('SELECT * from pos.factura_compra WHERE idfactura_compra=?', [numeroVenta], function (error, results, fields) { //query para determinar la sucursal del usuario
         if (error) {
