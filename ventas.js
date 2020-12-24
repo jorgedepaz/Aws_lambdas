@@ -1510,29 +1510,100 @@ module.exports.cancelSale = (event, context, callback) => {
                         }); //final de la query para obtener la existencia en la sucursal
                       }//fin si el detalle de doc.venta no tiene productos caso 4
                       else{ //Si el detalle de doc.venta tiene productos caso 3 reintegracion de ambos
-                        connection.commit(function (err) {
-                          console.log("Mensaje desde el commit");
-                          if (err) {
-                            return connection.rollback(function () {
-                              throw err;
-                            });
-                          } else {
-                            callback(null, {
-                              statusCode: 200,
-                              headers: {
-      
-                                'Access-Control-Allow-Origin': '*',
-      
-                                'Access-Control-Allow-Credentials': true,
-      
-                              },
-                              body: JSON.stringify({
-                                message: 'Caso 3 reintegracion de producto de detalle y orden'
-                                //Id: data_venta.iddocumento_venta
-                              })
-                            })
+                        //detalle_orden
+                        var productoTotal = [];
+                        var resta2 = []
+                        var nuevaExistencia = {
+                          idproducto: null,
+                          idsucursal: null,
+                          existencia: null
+                        }
+                        productoTotal = detalle_orden.concat(detalle_venta);
+
+                        let index
+                        let index2
+
+                        for (index = 0; index < productoTotal.length; index++) {//for para agrupar los datos de compra
+                          for (index2 = index + 1; index2 < productoTotal.length; index2++) {
+                            if (productoTotal[index].idproducto == productoTotal[index2].idproducto) {
+                              productoTotal[index].cantidad = productoTotal[index].cantidad + productoTotal[index2].cantidad
+                              productoTotal.splice(index2, 1);
+                            }
+
                           }
-                        }); //Fin commit
+                        }
+                        console.log('Estos son los dos arrays de productos convinados');
+                        console.log(productoTotal);
+
+                        let sqlIds = productoTotal.map(item => `(${item.idproducto})`);
+                          console.log(sqlIds);
+                          var existenciasProductoSucursal = "SELECT * FROM pos.producto_sucursal WHERE idproducto IN (" + sqlIds + ") and idsucursal = ?";
+                          connection.query(existenciasProductoSucursal, [SucursalVenta], function (error, results, fields) { //query para obtener la existencias de la sucursal del usuario
+                            if (error) {
+                              return connection.rollback(function () {
+                                throw error;
+                              });
+                            }
+                            console.log("Detalle del producto total");
+                            console.log(productoTotal);
+                            existencia = results
+                            console.log('Existencias que hay de los productos vendidos en la sucursal del usuario');
+                            console.log(existencia);
+                            var suma = [];
+                            var nuevaExistencia = {}
+                            //-----------------------para agragar las nuevas eistencias
+                            for (let index = 0; index < productoTotal.length; index++) { //En este ciclo anidado se comprobaria existencia si no utilizamos inventario negativo
+                              for (let index2 = 0; index2 < existencia.length; index2++) { //utilizar try catch
+                                if (productoTotal[index].idproducto == existencia[index2].idproducto) {
+                                  nuevaExistencia = {}
+                                  nuevaExistencia.idproducto = productoTotal[index].idproducto
+                                  nuevaExistencia.idsucursal = SucursalVenta
+                                  nuevaExistencia.existencia = existencia[index2].existencia + productoTotal[index].cantidad
+                                  suma.push(nuevaExistencia)
+                                }
+                              }
+                            }
+                            console.log(suma);
+                            //-----------------------------insertar las nuevas existencias
+                            
+                            //------------------------------------------------------------
+                         let sqlAct = suma.map(item => `(${item.idproducto},${item.idsucursal},${item.existencia})`);
+                         var queryActualizarInventario = "INSERT INTO pos.producto_sucursal (idproducto, idsucursal, existencia) VALUES"+sqlAct+"ON DUPLICATE KEY UPDATE existencia=VALUES(existencia)"
+                         console.log(sqlAct);
+                         console.log(queryActualizarInventario);
+        
+                         connection.query(queryActualizarInventario, function (error, results, fields) { //query para obtener la existencias de la sucursal del usuario
+                          if (error) {
+                            return connection.rollback(function () {
+                              throw error;
+                            });
+                          }
+                          
+                          connection.commit(function (err) {
+                            console.log("Mensaje desde el commit");
+                            if (err) {
+                              return connection.rollback(function () {
+                                throw err;
+                              });
+                            } else {
+                              callback(null, {
+                                statusCode: 200,
+                                headers: {
+        
+                                  'Access-Control-Allow-Origin': '*',
+        
+                                  'Access-Control-Allow-Credentials': true,
+        
+                                },
+                                body: JSON.stringify({
+                                  message: 'Caso 3 cancelacion de venta con reintegracion de los productos de ambos detalles',
+                                  Id: data_venta.iddocumento_venta
+                                })
+                              })
+                            }
+                          }); //Fin commit
+                        });//Final de la query para insertar nuevas existencias
+                        }); //final de la query para obtener la existencia en la sucursal
                       }//Fin si el detalle de doc.venta tiene productos caso 3 reintegracion de ambos
                     });
                   }//Fin //para el caso de orden vinculada unicamente con detalle de doc ventas
