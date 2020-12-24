@@ -1432,34 +1432,82 @@ module.exports.cancelSale = (event, context, callback) => {
                           throw error;
                         });
                       }
+                      
                       detalle_venta =results101;
                       console.log("Detalle documento de venta");
                       console.log(detalle_venta);
 
                       if (detalle_venta == "") {//si el detalle de doc.venta no tiene productos caso 4
-                        connection.commit(function (err) {
-                          console.log("Mensaje desde el commit");
-                          if (err) {
+                        //detalle_orden
+                        let sqlIds = detalle_orden.map(item => `(${item.idproducto})`);
+                          console.log(sqlIds);
+                          var existenciasProductoSucursal = "SELECT * FROM pos.producto_sucursal WHERE idproducto IN (" + sqlIds + ") and idsucursal = ?";
+                          connection.query(existenciasProductoSucursal, [SucursalVenta], function (error, results, fields) { //query para obtener la existencias de la sucursal del usuario
+                            if (error) {
+                              return connection.rollback(function () {
+                                throw error;
+                              });
+                            }
+                            console.log("Detalle de orden");
+                            console.log(detalle_orden);
+                            existencia = results
+                            console.log('Existencias que hay de los productos vendidos en la sucursal del usuario');
+                            console.log(existencia);
+                            var suma = [];
+                            var nuevaExistencia = {}
+                            //-----------------------para agragar las nuevas eistencias
+                            for (let index = 0; index < detalle_orden.length; index++) { //En este ciclo anidado se comprobaria existencia si no utilizamos inventario negativo
+                              for (let index2 = 0; index2 < existencia.length; index2++) { //utilizar try catch
+                                if (detalle_orden[index].idproducto == existencia[index2].idproducto) {
+                                  nuevaExistencia = {}
+                                  nuevaExistencia.idproducto = detalle_orden[index].idproducto
+                                  nuevaExistencia.idsucursal = SucursalVenta
+                                  nuevaExistencia.existencia = existencia[index2].existencia + detalle_orden[index].cantidad
+                                  suma.push(nuevaExistencia)
+                                }
+                              }
+                            }
+                            console.log(suma);
+                            //-----------------------------insertar las nuevas existencias
+                            
+                            //------------------------------------------------------------
+                         let sqlAct = suma.map(item => `(${item.idproducto},${item.idsucursal},${item.existencia})`);
+                         var queryActualizarInventario = "INSERT INTO pos.producto_sucursal (idproducto, idsucursal, existencia) VALUES"+sqlAct+"ON DUPLICATE KEY UPDATE existencia=VALUES(existencia)"
+                         console.log(sqlAct);
+                         console.log(queryActualizarInventario);
+        
+                         connection.query(queryActualizarInventario, function (error, results, fields) { //query para obtener la existencias de la sucursal del usuario
+                          if (error) {
                             return connection.rollback(function () {
-                              throw err;
+                              throw error;
                             });
-                          } else {
-                            callback(null, {
-                              statusCode: 200,
-                              headers: {
-      
-                                'Access-Control-Allow-Origin': '*',
-      
-                                'Access-Control-Allow-Credentials': true,
-      
-                              },
-                              body: JSON.stringify({
-                                message: 'Caso 4 cancelacion de venta con productos en la orden'
-                                //Id: data_venta.iddocumento_venta
-                              })
-                            })
                           }
-                        }); //Fin commit
+                          
+                          connection.commit(function (err) {
+                            console.log("Mensaje desde el commit");
+                            if (err) {
+                              return connection.rollback(function () {
+                                throw err;
+                              });
+                            } else {
+                              callback(null, {
+                                statusCode: 200,
+                                headers: {
+        
+                                  'Access-Control-Allow-Origin': '*',
+        
+                                  'Access-Control-Allow-Credentials': true,
+        
+                                },
+                                body: JSON.stringify({
+                                  message: 'Caso 4 cancelacion de venta solo con reintegracion del detalle de orden',
+                                  Id: data_venta.iddocumento_venta
+                                })
+                              })
+                            }
+                          }); //Fin commit
+                        });//Final de la query para insertar nuevas existencias
+                        }); //final de la query para obtener la existencia en la sucursal
                       }//fin si el detalle de doc.venta no tiene productos caso 4
                       else{ //Si el detalle de doc.venta tiene productos caso 3 reintegracion de ambos
                         connection.commit(function (err) {
