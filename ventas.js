@@ -1794,3 +1794,101 @@ module.exports.cancelSale = (event, context, callback) => {
 
 }; //final de la funcion
 
+module.exports.findShop = (event, context, callback) => {
+  context.callbackWaitsForEmptyEventLoop = false; //Para que no devuelva un timeOut porque no va a sber cuando han retornado la info
+
+  var numeroCompra = [event.pathParameters.numero]
+
+  const sql = 'SELECT * FROM pos.factura_compra where pos.factura_compra.idfactura_compra = ?';
+  const sql2 = 'SELECT * FROM pos.detalle_factura_compra where pos.detalle_factura_compra.idfactura_compra = ?';
+  const sql3 = 'SELECT * FROM pos.detalle_producto where pos.detalle_producto.idorden = ?';
+  var detalle = [];
+
+  var data3 = {
+    idfactura_compra: null,
+    numero: null,
+    serie: null,
+    fecha: null,
+    idproveedor: null,
+    total: null,
+    idusuario: null,
+    idsucursal: null,
+    estado: null,
+    detalle: null
+  };
+  var data = {};
+  var data2 = {};
+  connection.query(sql, numeroCompra, (error, rows) => {
+    if (error) {
+      callback({
+        statusCode: 500,
+        body: JSON.stringify(error)
+      })
+    } else {
+      data = rows;
+
+      connection.query(sql2, numeroCompra, (error, rows2) => { //Query para el detalle de servicios
+        if (error) {
+          callback({
+            statusCode: 500,
+            body: JSON.stringify(error)
+          })
+        } else {
+
+              try {
+                console.log("Detalle de orden");
+                console.log(rows);
+
+
+                data3.idfactura_compra = rows[0].idfactura_compra;
+                data3.numero = rows[0].numero;
+                data3.serie = rows[0].serie;
+                data3.fecha = rows[0].fecha;
+                data3.idproveedor = rows[0].idproveedor;
+                data3.total = rows[0].total;
+                data3.idusuario = rows[0].idusuario;
+                data3.idsucursal = rows[0].idsucursal;
+                data3.estado = rows[0].estado;
+                data3.detalle = rows2;
+
+                callback(null, { //inicio rows
+                  statusCode: 200,
+                  headers: {
+
+                    'Access-Control-Allow-Origin': '*',
+
+                    'Access-Control-Allow-Credentials': true,
+
+                  },
+                  body: JSON.stringify(
+                    data3
+
+                  )
+                }) //final callback
+              } catch (TypeError) {
+                callback(null, { //inicio rows
+                  statusCode: 404,
+                  headers: {
+
+                    'Access-Control-Allow-Origin': '*',
+
+                    'Access-Control-Allow-Credentials': true,
+
+                  },
+                  message: "Compra no encontrada"
+                }) //final callback
+              }
+         
+        }
+      }) //Final del detalle de servicios  
+      //callback(null, { //inicio rows
+      // statusCode: 200,
+      //body: JSON.stringify({
+      // clientes: rows
+      //})
+      //}) //final callback
+    } //final else
+  }) //final  query
+
+
+};
