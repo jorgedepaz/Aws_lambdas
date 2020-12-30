@@ -764,7 +764,7 @@ if ((data.estado == 2) ||(data<1) || (data>3)){
             });
           } else {
             callback(null, {
-              statusCode: 200,
+              statusCode: 500,
               headers: {
 
                 'Access-Control-Allow-Origin': '*',
@@ -939,7 +939,7 @@ if ((data.estado == 2) ||(data<1) || (data>3)){
   }
   else if ((results[0].estado == 1 || results[0].estado == 3 ) && datade == "" ) {
     callback(null, {
-      statusCode: 200,
+      statusCode: 500,
       headers: {
 
         'Access-Control-Allow-Origin': '*',
@@ -948,7 +948,7 @@ if ((data.estado == 2) ||(data<1) || (data>3)){
 
       },
       body: JSON.stringify({
-        message: 'No se puede agregar una orden sin servicios',
+        message: 'No es posible agregar una orden sin servicios',
         id: body.idorden
       })
     })
