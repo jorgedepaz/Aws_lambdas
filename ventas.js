@@ -50,7 +50,7 @@ module.exports.findSale = (event, context, callback) => {
 
           try {
             console.log("Detalle de orden");
-            console.log(rows);
+            console.log(rows3);
             /**
                    * iddocumento_venta: null,
       idcliente: null,
@@ -1801,7 +1801,7 @@ module.exports.findShop = (event, context, callback) => {
 
   const sql = 'SELECT * FROM pos.factura_compra where pos.factura_compra.idfactura_compra = ?';
   const sql2 = 'SELECT * FROM pos.detalle_factura_compra where pos.detalle_factura_compra.idfactura_compra = ?';
-  const sql3 = 'SELECT * FROM pos.detalle_producto where pos.detalle_producto.idorden = ?';
+  
   var detalle = [];
 
   var data3 = {
@@ -1835,9 +1835,9 @@ module.exports.findShop = (event, context, callback) => {
           })
         } else {
 
-              try {
+              if(rows2 != "") {
                 console.log("Detalle de orden");
-                console.log(rows);
+                console.log(rows2);
 
 
                 data3.idfactura_compra = rows[0].idfactura_compra;
@@ -1865,7 +1865,7 @@ module.exports.findShop = (event, context, callback) => {
 
                   )
                 }) //final callback
-              } catch (TypeError) {
+              } else {
                 callback(null, { //inicio rows
                   statusCode: 404,
                   headers: {
@@ -1875,7 +1875,9 @@ module.exports.findShop = (event, context, callback) => {
                     'Access-Control-Allow-Credentials': true,
 
                   },
-                  message: "Compra no encontrada"
+                  body: JSON.stringify({
+                    message: "Compra no encontrada"
+                  })
                 }) //final callback
               }
          

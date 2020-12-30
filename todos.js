@@ -158,7 +158,7 @@ module.exports.findAllSucursal = (event, context, callback) => {
 module.exports.findAll = (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false; //Para que no devuelva un timeOut porque no va a sber cuando han retornado la info
 
-  const sql = 'SELECT pos.producto.idproducto, pos.producto.codigo, pos.producto.nombre, pos.producto.descripcion, pos.marca.nombre_marca, pos.categoria.nombre_categoria, pos.producto.modelo, pos.producto.talla, pos.producto.min, pos.producto.max, pos.producto.costo, pos.producto.estado, pos.producto.linea, pos.producto.observacion FROM pos.producto inner join pos.marca inner join pos.categoria on pos.producto.idmarca = pos.marca.idmarca and pos.producto.idcategoria = pos.categoria.idcategoria';
+  const sql = 'SELECT pos.producto.idproducto, pos.producto.codigo,pos.producto.idmarca,pos.producto.idcategoria, pos.producto.nombre, pos.producto.descripcion, pos.marca.nombre_marca, pos.categoria.nombre_categoria, pos.producto.modelo, pos.producto.talla, pos.producto.min, pos.producto.max, pos.producto.costo, pos.producto.estado, pos.producto.linea, pos.producto.observacion FROM pos.producto inner join pos.marca inner join pos.categoria on pos.producto.idmarca = pos.marca.idmarca and pos.producto.idcategoria = pos.categoria.idcategoria';
   const sql2 = 'SELECT * FROM pos.precio';
   //const sql3 = 'SELECT * FROM pos.producto_sucursal';
   //const sql3 = 'select pos.producto_sucursal.idproducto,pos.sucursal.idsucursal, pos.sucursal.nombre, pos.producto_sucursal.existencia from pos.producto_sucursal inner join pos.sucursal where pos.producto_sucursal.idsucursal = pos.sucursal.idsucursal';
@@ -172,6 +172,8 @@ module.exports.findAll = (event, context, callback) => {
     codigo: null,
     nombre: null,
     descripcion: null,
+    idmarca: null, //Agregar marca
+    idcategoria: null, //Agregar categoria
     marca: null, //Agregar marca
     categoria: null, //Agregar categoria
     modelo: null,
@@ -235,6 +237,8 @@ module.exports.findAll = (event, context, callback) => {
                   codigo: data[index].codigo,
                   nombre: data[index].nombre,
                   descripcion: data[index].descripcion,
+                  idmarca: data[index].idmarca, //Agregar marca
+                  idcategoria: data[index].idcategoria, //Agregar categoria
                   marca: data[index].nombre_marca,
                   categoria: data[index].nombre_categoria,
                   modelo: data[index].modelo,
