@@ -1671,7 +1671,7 @@ module.exports.cancelSale = (event, context, callback) => {
               });
             } else {
               callback(null, {
-                statusCode: 200,
+                statusCode: 500,
                 headers: {
 
                   'Access-Control-Allow-Origin': '*',
