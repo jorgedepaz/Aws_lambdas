@@ -906,6 +906,7 @@ module.exports.shop = (event, context, callback) => {
       fecha: body.fecha,
       idproveedor: body.idproveedor,
       total: body.total,
+      estado: 1,
       idusuario: body.idusuario,
       idsucursal: body.idsucursal
     };
