@@ -1,5 +1,5 @@
-const bvrypt = require('bcryptjs');
-const bcrypt = require('bcryptjs/dist/bcrypt');
+const bcrypt = require('bcryptjs');
+
 
 const helpers = {}
 
