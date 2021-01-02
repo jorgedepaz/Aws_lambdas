@@ -610,7 +610,10 @@ module.exports.findOrder = (event, context, callback) => {
                     'Access-Control-Allow-Credentials': true,
 
                   },
-                  body: "Orden no encontrada"
+                  body: JSON.stringify({
+                    message: "Orden no encontrada"
+                  }
+                  )
                 }) //final callback
               }
 
@@ -1779,7 +1782,9 @@ let validation = new Validator(body, rules);
             'Access-Control-Allow-Credentials': true,
 
           },
-          body: 'No se puede insertar una orden sin detalle de orden o productos'
+          body: JSON.stringify({
+            message: 'No se puede insertar una orden sin detalle de orden o productos'
+          })
         })
       }else{
         callback(null, {
@@ -1791,7 +1796,7 @@ let validation = new Validator(body, rules);
             'Access-Control-Allow-Credentials': true,
 
           },
-          body: 'No se puede insertar una orden sin detalle de orden o productos'
+          body: JSON.stringify({message:'No se puede insertar una orden sin detalle de orden o productos'})
         })
       }
 

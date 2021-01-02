@@ -3,6 +3,7 @@ const connection = require('../connection');
 const queryString = require('querystring');
 const Validator = require('validatorjs');
 
+
 //--crear venta pos.documento_venta;, pos.detalle_documento_venta;
 module.exports.findSale = (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false; //Para que no devuelva un timeOut porque no va a sber cuando han retornado la info
@@ -98,7 +99,9 @@ module.exports.findSale = (event, context, callback) => {
                 'Access-Control-Allow-Credentials': true,
 
               },
-              body: "Venta no encontrada"
+              message: JSON.stringify({
+                message: "Venta no encontrada"
+              })
             }) //final callback
           }
 
@@ -216,7 +219,7 @@ module.exports.sale = (event, context, callback) => {
                 'Access-Control-Allow-Credentials': true,
 
               },
-              body: 'No se puede ralizar la venta, no existe orden vinculada ni detalle de documento de venta'
+              body: JSON.stringify({message:'No se puede ralizar la venta, no existe orden vinculada ni detalle de documento de venta'})
             })
 
           } else { //Insertamos la venta con los datos del detalle de documento de venta
