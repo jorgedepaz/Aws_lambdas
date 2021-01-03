@@ -1,8 +1,7 @@
 'use strict';
-
 const connection = require('../connection');
-const helpers = require('./helpers')
 const Validator = require('validatorjs');
+const bcrypt = require('bcryptjs');
 
 module.exports.login = (event, context, callback) =>{
 
@@ -19,7 +18,7 @@ module.exports.login = (event, context, callback) =>{
   
     if (validation.passes()) {
   
-    var User = {
+    const User = {
         username:body.username,
         password:body.password
       }
@@ -27,10 +26,74 @@ module.exports.login = (event, context, callback) =>{
       console.log("Este es el usuario: ");
       console.log(User);
       
+      connection.query('SELECT * FROM pos.usuario WHERE username = ?',[User.username], function (error, results, fields) { //query para insertar el documento venta
+        if (error) {
+          return connection.rollback(function () {
+            throw error;
+          });
+        }else{
+            console.log("Resultados");
+            console.log(results[0]);
+            
+
+          if(results != ""){
+
+            bcrypt.compare(User.password, results[0].password, function(err, result) {
+                if (result) {
+                    callback(null, {
+                        statusCode: 200,
+                        headers: {
+                
+                          'Access-Control-Allow-Origin': '*',
+                
+                          'Access-Control-Allow-Credentials': true,
+                
+                        },
+                        body: JSON.stringify({
+                            message: "Bienvenido "+results[0].username
+                        })
+                      });        
+                }else{
+                    callback(null, {
+                        statusCode: 500,
+                        headers: {
+                
+                          'Access-Control-Allow-Origin': '*',
+                
+                          'Access-Control-Allow-Credentials': true,
+                
+                        },
+                        body: JSON.stringify({
+                            message: "Contraseña incorrecta"
+                        })
+                      }); 
+                }
+            });
+             
+            }else{
+                callback(null, {
+                    statusCode: 500,
+                    headers: {
+            
+                      'Access-Control-Allow-Origin': '*',
+            
+                      'Access-Control-Allow-Credentials': true,
+            
+                    },
+                    body: JSON.stringify({
+                        message: "No existe un usuario con ese nombre"
+                    })
+                  }); 
+            }
+        }
+        
+      });//final de la query
+
       
-      (async function() {//Funcion (IIFE) ‘immediately invoked function expression’
+
+      /*(async function() {//Funcion (IIFE) ‘immediately invoked function expression’
   
-      /*  newUser.password =  await helpers.encryptPassword(newUser.password);
+        newUser.password =  await helpers.encryptPassword(newUser.password);
         console.log("Este es el nuevo usuario: ");
         console.log(newUser);
         connection.query('INSERT INTO pos.usuario SET ?',[newUser], function (error, results1, fields) { //query para insertar el documento venta
@@ -59,9 +122,9 @@ module.exports.login = (event, context, callback) =>{
             })
             
           }
-        });//final de la query*/
+        });//final de la query
   
-      })();
+      })();*/
       
       
   
