@@ -39,33 +39,59 @@ module.exports.signup = (event, context, callback) =>{
       newUser.password =  await helpers.encryptPassword(newUser.password);
       console.log("Este es el nuevo usuario: ");
       console.log(newUser);
-      connection.query('INSERT INTO pos.usuario SET ?',[newUser], function (error, results1, fields) { //query para insertar el documento venta
+      connection.query('SELECT * FROM pos.usuario WHERE username = ?',[newUser.username], function (error, results, fields) { //query para insertar el documento venta
         if (error) {
           return connection.rollback(function () {
             throw error;
           });
         }else{
-          
-          console.log(results1.insertId);
-          newUser.id = results1.insertId;
-  
-          callback(null, {
-            statusCode: 200,
-            headers: {
-  
-              'Access-Control-Allow-Origin': '*',
-  
-              'Access-Control-Allow-Credentials': true,
-  
-            },
-            body: JSON.stringify({
-              message: 'Usuario registrado correctamente',
-              id: newUser.id
-            })
-          })
-          
-        }
-      });//final de la query
+
+            if(results != ""){
+              callback(null, {
+                statusCode: 500,
+                headers: {
+      
+                  'Access-Control-Allow-Origin': '*',
+      
+                  'Access-Control-Allow-Credentials': true,
+      
+                },
+                body: JSON.stringify({
+                  message: 'Ya existe un usuario con el mismo nombre, intente con otro'
+                })
+              })        
+            }else{
+
+            connection.query('INSERT INTO pos.usuario SET ?',[newUser], function (error, results1, fields) { //query para insertar el documento venta
+              if (error) {
+                return connection.rollback(function () {
+                  throw error;
+                });
+              }else{
+                
+                console.log(results1.insertId);
+                newUser.id = results1.insertId;
+        
+                callback(null, {
+                  statusCode: 200,
+                  headers: {
+        
+                    'Access-Control-Allow-Origin': '*',
+        
+                    'Access-Control-Allow-Credentials': true,
+        
+                  },
+                  body: JSON.stringify({
+                    message: 'Usuario registrado correctamente',
+                    id: newUser.id
+                  })
+                })
+                
+              }
+            });//final de la query
+          }//else para cuando no existe el usuario
+      }//final del else
+    });//final de la query para saber si ya existe el usuario
 
     })();
     
