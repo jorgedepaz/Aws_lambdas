@@ -9,6 +9,9 @@ module.exports.login = (event, context, callback) =>{
 
     context.callbackWaitsForEmptyEventLoop = false;
     const body = JSON.parse(event.body);
+    
+    var payload = {};
+    var signOptions = {};
 
     var rules = {
       username: 'required|string|max:45',
@@ -43,10 +46,10 @@ module.exports.login = (event, context, callback) =>{
             bcrypt.compare(User.password, results[0].password, function(err, result) {
                 if (result) {
                     //Codigo para generar el token
-                    var payload = {
+                    payload = {
                         username: results[0].username
                     }
-                    var signOptions = {
+                    signOptions = {
                         expiresIn:  60    // 30 s
                      };
                      
