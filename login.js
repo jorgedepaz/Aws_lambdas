@@ -2,6 +2,8 @@
 const connection = require('../connection');
 const Validator = require('validatorjs');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const config = require('../config');
 
 module.exports.login = (event, context, callback) =>{
 
@@ -40,19 +42,43 @@ module.exports.login = (event, context, callback) =>{
 
             bcrypt.compare(User.password, results[0].password, function(err, result) {
                 if (result) {
-                    callback(null, {
-                        statusCode: 200,
-                        headers: {
-                
-                          'Access-Control-Allow-Origin': '*',
-                
-                          'Access-Control-Allow-Credentials': true,
-                
-                        },
-                        body: JSON.stringify({
-                            message: "Bienvenido "+results[0].username
-                        })
-                      });        
+                    //Codigo para generar el token
+                    var payload = {
+                        username: results[0].username
+                    }
+                    jwt.sign(payload,config.SECRET_TOKEN, function(error,token){
+                        if (error) {
+                            callback(null, {
+                                statusCode: 500,
+                                headers: {
+                        
+                                  'Access-Control-Allow-Origin': '*',
+                        
+                                  'Access-Control-Allow-Credentials': true,
+                        
+                                },
+                                body: JSON.stringify({
+                                    message: error
+                                })
+                              });
+                        }else{
+                            callback(null, {
+                                statusCode: 200,
+                                headers: {
+                        
+                                  'Access-Control-Allow-Origin': '*',
+                        
+                                  'Access-Control-Allow-Credentials': true,
+                        
+                                },
+                                body: JSON.stringify({
+                                    message: "Bienvenido "+results[0].username,
+                                    token
+                                })
+                              });
+                        }
+                    });
+                            
                 }else{
                     callback(null, {
                         statusCode: 500,
