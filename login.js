@@ -46,7 +46,11 @@ module.exports.login = (event, context, callback) =>{
                     var payload = {
                         username: results[0].username
                     }
-                    jwt.sign(payload,config.SECRET_TOKEN, function(error,token){
+                    var signOptions = {
+                        expiresIn:  60    // 30 s
+                     };
+                     
+                    jwt.sign(payload,config.SECRET_TOKEN,signOptions, function(error,token){
                         if (error) {
                             callback(null, {
                                 statusCode: 500,
