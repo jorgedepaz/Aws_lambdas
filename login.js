@@ -15,12 +15,12 @@ module.exports.login = (event, context, callback) =>{
     
     var usuario = {
       idusuario: null,
-      username: null,
-      password: null
+      username: null
     };
 
     var empleado = {
       idsucursal: null,
+      idempleado: null,
       nombre: null
     };
 
@@ -58,7 +58,8 @@ module.exports.login = (event, context, callback) =>{
         if (err) {
           throw err;
         }
-      connection.query('SELECT * FROM pos.usuario WHERE username = ?',[User.username], function (error, results, fields) { //query para consultar el usuario
+        let sqlUsuarioRol = "SELECT pos.usuario.idusuario, pos.usuario.password, pos.usuario.username, pos.rol.idrol, pos.rol.nombre FROM pos.usuario INNER JOIN pos.rol ON pos.usuario.idrol = pos.rol.idrol WHERE username = ?";
+      connection.query(sqlUsuarioRol,[User.username], function (error, results, fields) { //query para consultar el usuario
         if (error) {
           return connection.rollback(function () {
             throw error;
@@ -71,13 +72,16 @@ module.exports.login = (event, context, callback) =>{
             //Armando objeto usuario para el payload
             usuario.idusuario = results[0].idusuario;
             usuario.username = results[0].username;
+            rol.idrol = results[0].idrol;
+            rol.nombre = results[0].nombre;
             
             console.log(usuario);
+            console.log(rol);
 
             bcrypt.compare(User.password, results[0].password, function(err, result) {
                 if (result) {
                     //Codigo para generar el token
-                    let sqlEmpleado = "";//consulta para obtener el objeto que corresponde al empleado
+                    let sqlEmpleado = "SELECT pos.usuario.idusuario, pos.empleado.idempleado, pos.empleado.nombre, pos.empleado.idsucursal FROM pos.usuario INNER JOIN pos.empleado ON pos.usuario.idempleado = pos.empleado.idempleado WHERE pos.usuario.idusuario = ?";//consulta para obtener el objeto que corresponde al empleado
                     connection.query(sqlEmpleado,[usuario.idusuario], function (error, results, fields) { //query para consultar empleado
                       if (error) {
                         return connection.rollback(function () {
@@ -86,12 +90,33 @@ module.exports.login = (event, context, callback) =>{
                       }else{
                         //crear aqui el objeto empleado con todos sus datos
                         //empleado.
+                        console.log("Informacion del empleado");
+                        
+                        empleado.idempleado = results[0].idempleado;
+                        empleado.idsucursal = results[0].idsucursal;
+                        empleado.nombre = results[0].nombre;
+                        
+                        let sqlPermisos = "SELECT pos.rol_permiso.idpermiso, pos.permiso.nombre FROM pos.rol_permiso INNER JOIN pos.permiso ON rol_permiso.idpermiso = permiso.idpermiso WHERE rol_permiso.idrol = ?";//consulta para obtener el objeto que corresponde al empleado
+                        connection.query(sqlPermisos,[rol.idrol], function (error, results, fields) { //query para consultar empleado
+                          if (error) {
+                            return connection.rollback(function () {
+                              throw error;
+                            });
+                          }else{
+                            rol_permisos = results; 
+                            
                     payload = {
-                        username: results[0].username
+                        usuario,
+                        empleado,
+                        rol,
+                        rol_permisos
                     }
+
                     signOptions = {
-                        expiresIn:  60    // 30 s
+                        //expiresIn:  60    // 30 s
                      };
+                     console.log("Payload");
+                     console.log(payload);
                      
                     jwt.sign(payload,config.SECRET_TOKEN,signOptions, function(error,token){
                         
@@ -138,7 +163,7 @@ module.exports.login = (event, context, callback) =>{
                         
                                 },
                                 body: JSON.stringify({
-                                    message: "Bienvenido "+results[0].username,
+                                    message: "Bienvenido "+usuario.username,
                                     token
                                 })
                               });
@@ -147,6 +172,9 @@ module.exports.login = (event, context, callback) =>{
                        
                         }//final del else cuando se genera el token con exito
                     });//Final del jwt sign
+
+                       }//final del else para consultar permisos
+                 })//final de la query para consultar permisos
 
                    }//final del else para consultar empleado
                  })//final de la query para consultar empleado
