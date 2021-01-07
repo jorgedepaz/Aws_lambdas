@@ -198,7 +198,7 @@ module.exports.login = (event, context, callback) =>{
                 
                         },
                         body: JSON.stringify({
-                            message: "Contraseña incorrecta"
+                            message: "Credenciales invalidas"
                         })
                       }); 
                     } //final del else
@@ -225,7 +225,7 @@ module.exports.login = (event, context, callback) =>{
             
                     },
                     body: JSON.stringify({
-                        message: "No existe un usuario con ese nombre"
+                        message: "Credenciales invalidas"
                     })
                   }); 
                 } //final del else
