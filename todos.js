@@ -2,6 +2,10 @@
 const connection = require('../connection');
 const queryString = require('querystring');
 const Validator = require('validatorjs');
+const auth = require('./auth_token');
+
+//auth.auth_token();
+
 var resC;
 var id1;
 module.exports.findAllSucursal = (event, context, callback) => {
@@ -1143,7 +1147,10 @@ module.exports.findMunicipio = (event, context, callback) => {
 
 module.exports.findBrand = (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false; //Para que no devuelva un timeOut porque no va a sber cuando han retornado la info
-
+  
+  
+  
+  //console.log(event.path);
   const sql = 'SELECT * FROM pos.marca';
 
   connection.query(sql, (error, rows) => {
@@ -1168,6 +1175,7 @@ module.exports.findBrand = (event, context, callback) => {
       }) //final rows
     }
   })
+  
 };
 module.exports.findCategory = (event, context, callback) => {
   context.callbackWaitsForEmptyEventLoop = false; //Para que no devuelva un timeOut porque no va a sber cuando han retornado la info
