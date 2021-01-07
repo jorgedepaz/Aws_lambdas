@@ -192,7 +192,7 @@ module.exports.signup = (event, context, callback) => {
     }); //final de la query para consultar empleados
 
       }); //final begin transaction
-    })();
+    })();//final de la funcion asicrona
 
 
 
