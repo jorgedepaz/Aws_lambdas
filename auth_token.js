@@ -1,24 +1,57 @@
+'use strict';
+const config = require('../config');
+
+const jwt = require('jsonwebtoken');
+
 module.exports.auth_token = async(event,context)=>{
+    const authorizerToken = event.authorizationToken;
+    const authorizerArr = authorizerToken.split(' ');
+    const token = authorizerArr[1];
+    console.log('Token entero');
+    console.log(authorizerToken);
+    console.log('Token array');
+    console.log(authorizerArr);
+    console.log('Token solo');
+    console.log(token);
     
-    return {
-    statusCode: 200,
-    body: JSON.stringify(
-      {
-        message: 'Sistema de control v1.0! ',
-        input: event,
-      }),
-    };
+    
+    if (authorizerArr.length != 2 || authorizerArr[0] != 'Bearer' || authorizerArr[1].length == 0) {
+        console.log('Primer IF');
+        return generatePolicy('undefined','Deny',event.methodArn);
+    }
+
+    var decodeJwt;
+
+    try {
+        decodeJwt = jwt.verify(token,config.SECRET_TOKEN);    
+    } catch (error) {
+        return generatePolicy('undefined','Deny',event.methodArn);    
+    }
+    /*console.log("Token decodificado");
+    console.log(decodeJwt);
+
+    console.log("Valores para validar las condicionales");
+    console.log(typeof decodeJwt.usuario);
+    console.log(decodeJwt.usuario.length);*/
+
+    if (typeof decodeJwt.usuario != 'undefined' && decodeJwt.usuario.username.length > 0) {
+        console.log('Segundo IF');
+        return generatePolicy(decodeJwt.usuario.username,'Allow',event.methodArn);
+    }
+    console.log('Por defecto');
+    return generatePolicy('undefined','Deny',event.methodArn);
+
   };
 // Help function to generate an IAM policy
 const generatePolicy = function(principalId, effect, resource) {
-    const authResponse = {};
+    let authResponse = {};
     
     authResponse.principalId = principalId;
     if (effect && resource) {
-        var policyDocument = {};
+        let policyDocument = {};
         policyDocument.Version = '2012-10-17'; 
         policyDocument.Statement = [];
-        var statementOne = {};
+        let statementOne = {};
         statementOne.Action = 'execute-api:Invoke'; 
         statementOne.Effect = effect;
         statementOne.Resource = resource;
@@ -26,29 +59,7 @@ const generatePolicy = function(principalId, effect, resource) {
         authResponse.policyDocument = policyDocument;
     }
     
-    // Optional output with custom properties of the String, Number or Boolean type.
-    authResponse.context = {
-        "stringKey": "stringval",
-        "numberKey": 123,
-        "booleanKey": true
-    };
+    
     return authResponse;
 }
-    /*console.log("Hola desde auth_token");
-    console.log(req.path);
-    console.log(req.methodArn);*/
-    /*(async function () {//inicio de la funcion asicrona
-    })();//final de la funcion asicrona*/
-
-    /*if (req.path != "/login") {
-        if (req.headers.authorization) {//Para verificar que el header este llegando
-            if (req.path == "/marca") {
-                return true;
-            }
-            
-        }else{ 
-            return false;
-        }
-    }else{
-        return true;
-    }*/
+    
