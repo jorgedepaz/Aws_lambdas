@@ -1,7 +1,17 @@
 'use strict';
 const config = require('../config');
+const _ = require('lodash');
 
 const jwt = require('jsonwebtoken');
+
+//arn:aws:lambda:us-east-1:375194658163:function:sales-orders-shop-dev-
+//al final del arn se agrega el nombre del la funcionpo/* */
+
+const authorizeUser = (userScopes, methodArn) => {
+    //const hasValidScope = _.some(userScopes, scope => _.endsWith(methodArn, scope));
+    const hasValidScope = _.some(userScopes, scope => _.endsWith(methodArn, scope));
+    return hasValidScope;
+  };
 
 module.exports.auth_token = async(event,context)=>{
     const authorizerToken = event.authorizationToken;
@@ -13,8 +23,14 @@ module.exports.auth_token = async(event,context)=>{
     console.log(authorizerArr);
     console.log('Token solo');
     console.log(token);
-    
-    
+    console.log('ARN');
+    console.log(event.methodArn);
+
+    const authorizeUser = (userScopes, methodArn) => {
+        const hasValidScope = _.some(userScopes, scope => _.endsWith(methodArn, scope));
+        return hasValidScope;
+      };
+
     if (authorizerArr.length != 2 || authorizerArr[0] != 'Bearer' || authorizerArr[1].length == 0) {
         console.log('Primer IF');
         return generatePolicy('undefined','Deny',event.methodArn);
@@ -35,14 +51,19 @@ module.exports.auth_token = async(event,context)=>{
     console.log(decodeJwt.usuario.length);*/
 
     if (typeof decodeJwt.usuario != 'undefined' && decodeJwt.usuario.username.length > 0) {
-        console.log('Segundo IF');
-        return generatePolicy(decodeJwt.usuario.username,'Allow',event.methodArn);
+
+               
+        let permisos = _.map(decodeJwt.rol_permisos, 'nombre');
+        
+        const isAllowed = authorizeUser(permisos, event.methodArn);
+        const effect = isAllowed ? 'Allow' : 'Deny';
+        return generatePolicy(decodeJwt.usuario.username,effect,event.methodArn);
     }
     console.log('Por defecto');
     return generatePolicy('undefined','Deny',event.methodArn);
 
   };
-// Help function to generate an IAM policy
+
 const generatePolicy = function(principalId, effect, resource) {
     let authResponse = {};
     
