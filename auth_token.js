@@ -1,8 +1,8 @@
 'use strict';
-const config = require('../config');
-const _ = require('lodash');
+//const config = require('../config');
+//const _ = require('lodash');
 
-const jwt = require('jsonwebtoken');
+//const jwt = require('jsonwebtoken');
 
 //arn:aws:lambda:us-east-1:375194658163:function:sales-orders-shop-dev-
 //al final del arn se agrega el nombre del la funcionpo/* */
@@ -13,14 +13,64 @@ const jwt = require('jsonwebtoken');
     return hasValidScope;
   };*/
 
-module.exports.auuth_token = async(event, context)=>{
-    const tokenID= (event.headers && (event.headers['X-Amz-Security-Token'] || event.headers['x-amz-security-Token'])) || event.authorizationToken;
+module.exports.auth_token = async(event, context)=>{
 
-    if (!tokenID) {
+    //const tokenID= (event.headers && (event.headers['X-Amz-Security-Token'] || event.headers['x-amz-security-Token'])) || event.authorizationToken;
+
+    //const tokenID= event.headers['X-Amz-Security-Token'];
+    const tokenID= event.headers['Authorization'];
+    
+    console.log("Este es el token");
+    console.log(tokenID);
+
+   if (!tokenID) {
         console.log("No se encuentra el token en el evento");
+        //return generatePolicy({ allow: false });
+        return generatePolicy({ allow: false });
+        //console.log(generatePolicy('undefined','Deny',event.methodArn));
+        //return generatePolicy('undefined','Deny',event.methodArn);
+    }else{
+        console.log("Token encontrado, allow: true");
+        //console.log(generatePolicy('undefined','Allow',event.methodArn));
+        return generatePolicy({ allow: true });
+        //return generatePolicy('undefined','Allow',event.methodArn);
     }
 
 }
+/*const generatePolicy = function(principalId, effect, resource) {
+    let authResponse = {};
+    
+ authResponse.principalId = principalId;
+ if (effect && resource) {
+    var policyDocument = {};
+    policyDocument.Version = '2012-10-17'; 
+    policyDocument.Statement = [];
+    var statementOne = {};
+    statementOne.Action = 'execute-api:Invoke'; 
+    statementOne.Effect = effect;
+    statementOne.Resource = resource;
+    policyDocument.Statement[0] = statementOne;
+    authResponse.policyDocument = policyDocument;
+}
+    
+    
+    return authResponse;
+};*/
+
+const generatePolicy = ({ allow }) => {
+    return {
+        principalId: 'token',
+        policyDocument: {
+            Version: '2012-10-17',
+            Statement: {
+                Action: 'execute-api:Invoke',
+                Effect: allow ? 'Allow' : 'Deny',
+                Resource: '*',
+            },
+        },
+    };
+};
+
 
 /*module.exports.auth_token = async(event,context)=>{
     const authorizerToken = event.authorizationToken;
@@ -91,7 +141,7 @@ module.exports.auuth_token = async(event, context)=>{
     
 
   };*///ginal de la funcion
-
+/*
 const generatePolicy = function(principalId, effect, resource) {
     let authResponse = {};
     
@@ -110,5 +160,5 @@ const generatePolicy = function(principalId, effect, resource) {
     
     
     return authResponse;
-}
+}*/
     
