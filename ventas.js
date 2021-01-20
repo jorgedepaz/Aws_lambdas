@@ -1001,7 +1001,8 @@ module.exports.shop = (event, context, callback) => {
 
             console.log("Array de objetos para insertar ");
             console.log(suma);
-
+//Error del bug cuando se quiere eliminar prodcuto que no existe, la existencia es suma
+          if (suma != "") {
             let sqlDelete = suma.map(item => `(${item.idproducto})`)
             var queryDeleteProductoSucursal = "DELETE FROM pos.producto_sucursal WHERE pos.producto_sucursal.idproducto IN (" + sqlDelete + ") and pos.producto_sucursal.idsucursal = ?";
             console.log("ID's para elmininar");
@@ -1051,6 +1052,45 @@ module.exports.shop = (event, context, callback) => {
                 }); //Fin commit
               }); //fin para sumar los productos al inventario
             }); //fin para eliminar los productos viejos
+          }//fin del if para inexistencias 
+          else{
+            //[Sucursal]
+            let sqlX = datade.map(item => `(${item.idproducto},${Sucursal}, ${item.cantidad})`)
+              const finalQueryX = "INSERT INTO pos.producto_sucursal (idproducto,idsucursal,existencia) VALUES " + sqlX
+
+              connection.query(finalQueryX, function (error, results, fields) { //para sumar los productos al inventario
+                if (error) {
+                  return connection.rollback(function () {
+                    throw error;
+                  });
+                }
+
+                connection.commit(function (err) {
+                  console.log("Mensaje desde el commit");
+                  if (err) {
+                    return connection.rollback(function () {
+                      throw err;
+                    });
+                  } else {
+                    callback(null, {
+                      statusCode: 200,
+                      headers: {
+
+                        'Access-Control-Allow-Origin': '*',
+
+                        'Access-Control-Allow-Credentials': true,
+
+                      },
+                      body: JSON.stringify({
+                        message: 'factura de compra y detalles insertados correctamente',
+                        id: idG
+                      })
+                    })
+                  }
+                }); //Fin commit
+              }); //fin para sumar los productos al inventario
+          }
+            
           }); //fin para obtener las existencias de la sucursal
           
         }); //fin del query para el detalle de compra
