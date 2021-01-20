@@ -2544,7 +2544,8 @@ var rules = {
   costo: 'required|numeric',
   estado: 'integer',
   linea: 'string|max:45',
-  observacion: 'string|max:60'
+  observacion: 'string|max:60',
+  precio: 'required'
 };
 
   
@@ -2568,6 +2569,8 @@ let validation = new Validator(body, rules);
     linea: body.linea,
     observacion: body.observacion
   };
+  var precios = [];
+  precios = body.precio;
   // Obteniendo todas las claves del JSON
 
 
@@ -2585,7 +2588,17 @@ let validation = new Validator(body, rules);
       }
 
       idG = results.insertId;
-
+      
+      let sql = precios.map(item => `(${idG},${item})`);
+      const finalQuery = "INSERT INTO pos.precio (idproducto, precio) VALUES " + sql
+      console.log(finalQuery);
+      
+      connection.query(finalQuery, function (error, results, fields) {
+        if (error) {
+          return connection.rollback(function () {
+            throw error;
+          });
+        }
       connection.commit(function (err) { ///
         console.log("Mensaje desde el commit");
         if (err) {
@@ -2604,14 +2617,14 @@ let validation = new Validator(body, rules);
             },
             body: JSON.stringify({
               message: 'producto insertado correctamente',
-              id: data.idproducto
+              id: idG
             })
           })
         }
 
         //--------------------------------
       }); //Fin commit
-
+    });//final de la consulta para agregar precios
 
 
 
