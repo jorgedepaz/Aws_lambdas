@@ -2434,7 +2434,8 @@ var rules = {
   costo: 'required|numeric',
   estado: 'integer',
   linea: 'string|max:45',
-  observacion: 'string|max:60'
+  observacion: 'string|max:60',
+  precio: 'required'
 };
 
   
@@ -2458,9 +2459,11 @@ let validation = new Validator(body, rules);
     linea: body.linea,
     observacion: body.observacion
   };
+  var precio =  body.precio;
   // Obteniendo todas las claves del JSON
 
-
+  console.log("Estos son los precios");
+  console.log(precio);
 
   connection.beginTransaction(function (err) {
     var idG;
@@ -2474,33 +2477,117 @@ let validation = new Validator(body, rules);
         });
       }
 
-      idG = results.insertId;
-
-      connection.commit(function (err) { ///
-        console.log("Mensaje desde el commit");
-        if (err) {
+      
+      connection.query('SELECT * FROM pos.precio WHERE pos.precio.idproducto = ?', [data.idproducto], function (error, results, fields) {
+        if (error) {
           return connection.rollback(function () {
-            throw err;
+            throw error;
           });
-        } else {
-          callback(null, {
-            statusCode: 200,
-            headers: {
+        }
+        /*
+        let sql = precios.map(item => `(${idG},${item})`);
+      const finalQuery = "INSERT INTO pos.precio (idproducto, precio) VALUES " + sql
+      console.log(finalQuery);
+        */
+        console.log("Estos son los precios");
+        console.log(results);
+        console.log("este es el ID");
+        console.log(data.idproducto);
 
-              'Access-Control-Allow-Origin': '*',
+        if (results == "") {
+          let sql = precio.map(item => `(${data.idproducto},${item})`);
+          console.log("Estos son los datos para sql");
+          console.log(sql);
+          const query = "INSERT INTO pos.precio (idproducto, precio) VALUES " + sql
+          connection.query(query, function (error, results, fields) {
+            if (error) {
+              return connection.rollback(function () {
+                throw error;
+              });
+            }
 
-              'Access-Control-Allow-Credentials': true,
+            connection.commit(function (err) { ///
+              console.log("Mensaje desde el commit");
+              if (err) {
+                return connection.rollback(function () {
+                  throw err;
+                });
+              } else {
+                callback(null, {
+                  statusCode: 200,
+                  headers: {
+      
+                    'Access-Control-Allow-Origin': '*',
+      
+                    'Access-Control-Allow-Credentials': true,
+      
+                  },
+                  body: JSON.stringify({
+                    message: 'producto actualizado correctamente',
+                    id: data.idproducto
+                  })
+                })
+              }
+      
+              //--------------------------------
+            }); //Fin commit
 
-            },
-            body: JSON.stringify({
-              message: 'producto actualizado correctamente',
-              id: idG
-            })
-          })
+          }); //Final del query para el caso en que no existan precios y asi evitar el bug al elimnar
+        }else{
+
+          var queryDelete = "DELETE FROM pos.precio WHERE pos.precio.idproducto = " + data.idproducto;
+          
+
+            connection.query(queryDelete, function (error, results, fields) { //para eliminar los productos que se van a actualizar
+              if (error) {
+                return connection.rollback(function () {
+                  throw error;
+                });
+              }
+
+          let sql = precio.map(item => `(${data.idproducto},${item})`);
+          console.log("Estos son los datos para sql");
+          console.log(sql);
+          const query = "INSERT INTO pos.precio (idproducto, precio) VALUES " + sql
+          connection.query(query, function (error, results, fields) {
+            if (error) {
+              return connection.rollback(function () {
+                throw error;
+              });
+            }
+
+            connection.commit(function (err) { ///
+              console.log("Mensaje desde el commit");
+              if (err) {
+                return connection.rollback(function () {
+                  throw err;
+                });
+              } else {
+                callback(null, {
+                  statusCode: 200,
+                  headers: {
+      
+                    'Access-Control-Allow-Origin': '*',
+      
+                    'Access-Control-Allow-Credentials': true,
+      
+                  },
+                  body: JSON.stringify({
+                    message: 'producto actualizado correctamente',
+                    id: data.idproducto
+                  })
+                })
+              }
+      
+              //--------------------------------
+            }); //Fin commit
+          });//fin de la query para hacer la insercion
+        }); //Final del query para eliminar los datos
+
         }
 
-        //--------------------------------
-      }); //Fin commit
+      
+    }); //Fin consulta para saber si tiene precios
 
 
 
