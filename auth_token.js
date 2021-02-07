@@ -75,7 +75,7 @@ module.exports.auth_token = async(event, context)=>{
 
         //la parte de abajo descomentarla si no esta el for
         console.log({ allow: isAllowed });
-        return generatePolicy({ allow: isAllowed });
+        return generatePolicy({ allow: true });
     }else{
         console.log('Por defecto');
         return generatePolicy({ allow: false });
